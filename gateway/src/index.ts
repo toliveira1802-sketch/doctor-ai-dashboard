@@ -7,6 +7,7 @@ import insightsRoutes from "./routes/insights.routes.js";
 import ingestRoutes from "./routes/ingest.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import webhookRoutes from "./routes/webhook.routes.js";
+import openclawRoutes from "./routes/openclaw.routes.js";
 
 const app = express();
 const PORT = parseInt(process.env.GATEWAY_PORT || "3001");
@@ -52,6 +53,16 @@ app.get("/api/health", async (_req, res) => {
     checks.supabase = { status: "unreachable" };
   }
 
+  // Check OpenClaw
+  try {
+    const t0 = Date.now();
+    const openclawUrl = process.env.OPENCLAW_URL || "http://127.0.0.1:18789";
+    const resp = await fetch(`${openclawUrl}/healthz`, { signal: AbortSignal.timeout(5000) });
+    checks.openclaw = { status: resp.ok ? "healthy" : "error", response_ms: Date.now() - t0 };
+  } catch {
+    checks.openclaw = { status: "offline" };
+  }
+
   // Webhooks status
   checks.webhooks = {
     come: { configured: !!process.env.COME_WEBHOOK_SECRET },
@@ -80,6 +91,7 @@ app.use("/api/insights", insightsRoutes);
 app.use("/api/ingest", ingestRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/webhook", webhookRoutes);
+app.use("/api/openclaw", openclawRoutes);
 
 // Start
 app.listen(PORT, () => {
