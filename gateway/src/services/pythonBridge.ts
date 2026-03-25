@@ -1,6 +1,7 @@
-import { config } from "../config/env.js";
+// Hardcoded for local dev - Docker Compose will override via env
+const BASE_URL = process.env.PYTHON_SERVICE_URL ?? "http://127.0.0.1:8006";
 
-const BASE_URL = config.pythonServiceUrl;
+console.log(`[PythonBridge] URL: ${BASE_URL}`);
 
 export async function callPython<T = any>(
   path: string,
@@ -8,21 +9,17 @@ export async function callPython<T = any>(
   body?: any
 ): Promise<T> {
   const url = `${BASE_URL}${path}`;
-  const options: RequestInit = {
+
+  const res = await fetch(url, {
     method,
     headers: { "Content-Type": "application/json" },
-  };
+    body: method === "POST" && body ? JSON.stringify(body) : undefined,
+  });
 
-  if (body && method === "POST") {
-    options.body = JSON.stringify(body);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Python ${res.status}: ${text}`);
   }
 
-  const response = await fetch(url, options);
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Python service error (${response.status}): ${error}`);
-  }
-
-  return response.json() as Promise<T>;
+  return res.json() as Promise<T>;
 }

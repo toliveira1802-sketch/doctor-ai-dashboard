@@ -1,0 +1,35 @@
+{$DOMAIN:localhost} {
+	# Dashboard (React SPA)
+	handle / {
+		root * /srv/dashboard
+		try_files {path} /index.html
+		file_server
+	}
+
+	handle /assets/* {
+		root * /srv/dashboard
+		file_server
+	}
+
+	# API Gateway
+	handle /api/* {
+		reverse_proxy gateway:3001
+	}
+
+	# Security headers
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		X-XSS-Protection "1; mode=block"
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	# Logs
+	log {
+		output file /data/access.log {
+			roll_size 10mb
+			roll_keep 5
+		}
+	}
+}

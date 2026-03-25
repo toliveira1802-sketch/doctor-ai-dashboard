@@ -29,3 +29,13 @@ chroma_data/
 
 # Uploads
 uploads/
+
+# Production env (has secrets)
+.env.production
+
+# Dashboard build
+dashboard/dist/
+
+# Caddy data
+caddy_data/
+caddy_config/

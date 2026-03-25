@@ -1,7 +1,5 @@
 import express from "express";
 import cors from "cors";
-import helmet from "helmet";
-import { config } from "./config/env.js";
 
 import chatRoutes from "./routes/chat.routes.js";
 import sofiaRoutes from "./routes/sofia.routes.js";
@@ -11,30 +9,64 @@ import dashboardRoutes from "./routes/dashboard.routes.js";
 import webhookRoutes from "./routes/webhook.routes.js";
 
 const app = express();
+const PORT = parseInt(process.env.GATEWAY_PORT || "3001");
+const PYTHON_URL = process.env.PYTHON_SERVICE_URL || "http://127.0.0.1:8006";
 
 // Middleware
-app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
-// Health check
+// Health check (expanded)
 app.get("/api/health", async (_req, res) => {
+  const startTime = Date.now();
+  const checks: Record<string, any> = {};
+
+  // Check Python agents
   try {
-    const pythonHealth = await fetch(
-      `${config.pythonServiceUrl}/health`
-    ).then((r) => r.json());
-    res.json({
-      status: "healthy",
-      service: "doctor-auto-gateway",
-      python: pythonHealth,
-    });
+    const t0 = Date.now();
+    const resp = await fetch(`${PYTHON_URL}/health`, { signal: AbortSignal.timeout(5000) });
+    checks.python = { ...(await resp.json()), response_ms: Date.now() - t0 };
   } catch {
-    res.json({
-      status: "degraded",
-      service: "doctor-auto-gateway",
-      python: { status: "unreachable" },
-    });
+    checks.python = { status: "unreachable" };
   }
+
+  // Check Supabase
+  try {
+    const t0 = Date.now();
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (supabaseUrl && supabaseKey) {
+      const resp = await fetch(`${supabaseUrl}/rest/v1/ai_agent_config?select=agent_name&limit=1`, {
+        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+        signal: AbortSignal.timeout(5000),
+      });
+      checks.supabase = { status: resp.ok ? "healthy" : "error", response_ms: Date.now() - t0 };
+    } else {
+      checks.supabase = { status: "not_configured" };
+    }
+  } catch {
+    checks.supabase = { status: "unreachable" };
+  }
+
+  // Webhooks status
+  checks.webhooks = {
+    come: { configured: !!process.env.COME_WEBHOOK_SECRET },
+    kommo: { configured: !!process.env.KOMMO_TOKEN && !!process.env.KOMMO_DOMAIN },
+  };
+
+  const overallStatus =
+    checks.python?.status === "unreachable" ? "degraded" :
+    checks.supabase?.status === "unreachable" ? "degraded" : "healthy";
+
+  res.json({
+    status: overallStatus,
+    service: "doctor-auto-gateway",
+    version: "0.2.0",
+    environment: process.env.NODE_ENV || "development",
+    uptime_s: Math.floor(process.uptime()),
+    response_ms: Date.now() - startTime,
+    checks,
+  });
 });
 
 // Routes
@@ -46,7 +78,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/webhook", webhookRoutes);
 
 // Start
-app.listen(config.port, () => {
-  console.log(`Gateway running on port ${config.port}`);
-  console.log(`Python service: ${config.pythonServiceUrl}`);
+app.listen(PORT, () => {
+  console.log(`Gateway running on port ${PORT}`);
+  console.log(`Python service: ${PYTHON_URL}`);
 });
