@@ -35,12 +35,30 @@ export const getCollections = () => request('/sofia/command', 'POST', { action: 
 export const searchRAG = (query, collections = null) =>
   request('/sofia/command', 'POST', { action: 'search_study', payload: { query } });
 
-// Ingest
-export const ingestPerplexity = (query, collection = 'study_industry_news') =>
-  request('/sofia/command', 'POST', {
-    action: 'chat',
-    message: `Pesquise via Perplexity: ${query}`,
-  });
-
 // Dashboard metrics
 export const getDashboardMetrics = () => request('/dashboard/metrics');
+
+// Ingestion
+export const ingestFile = async (file, title, targetRag, targetCollection) => {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('title', title);
+  form.append('source_type', 'auto');
+  form.append('target_rag', targetRag);
+  form.append('target_collection', targetCollection);
+  const res = await fetch(`${API}/ingest/file`, { method: 'POST', body: form });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  return res.json();
+};
+
+export const ingestURL = (url, title, targetCollection) =>
+  request('/ingest/url', 'POST', { url, title, target_collection: targetCollection });
+
+export const ingestText = (title, text, targetRag, targetCollection) =>
+  request('/ingest/text', 'POST', { title, text, target_rag: targetRag, target_collection: targetCollection });
+
+export const ingestPerplexity = (query, targetCollection, model = 'sonar-pro') =>
+  request('/ingest/perplexity', 'POST', { query, target_collection: targetCollection, model });
+
+export const getIngestCollections = () => request('/ingest/collections', 'GET');
+export const getIngestHistory = () => request('/ingest/history', 'GET');

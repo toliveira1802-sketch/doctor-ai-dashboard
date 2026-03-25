@@ -14,6 +14,10 @@ const PYTHON_URL = process.env.PYTHON_SERVICE_URL || "http://127.0.0.1:8006";
 
 // Middleware
 app.use(cors());
+
+// Raw body for file upload proxy (must be before json parser)
+app.use("/api/ingest/file", express.raw({ type: "multipart/form-data", limit: "50mb" }));
+
 app.use(express.json({ limit: "10mb" }));
 
 // Health check (expanded)
