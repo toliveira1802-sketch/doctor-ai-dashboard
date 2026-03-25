@@ -3,13 +3,12 @@ from pydantic import BaseModel
 
 from agents.sofia import SofiaAgent
 from rag.retriever import RAGRetriever
-from services.supabase_client import log_sofia_action
 
 router = APIRouter()
 
 
 class SofiaRequest(BaseModel):
-    action: str = "chat"  # 'chat', 'promote_content', 'status'
+    action: str = "chat"
     message: str = ""
     history: list[dict] = []
     payload: dict = {}
@@ -17,10 +16,10 @@ class SofiaRequest(BaseModel):
 
 @router.post("/orchestrate")
 async def sofia_orchestrate(request: Request, body: SofiaRequest):
-    """Send a command to Sofia."""
+    """Send a command to Sofia orchestrator."""
     chroma = request.app.state.chroma
     retriever = RAGRetriever(chroma)
-    sofia = SofiaAgent(retriever)
+    sofia = SofiaAgent(retriever, chroma)
 
     result = await sofia.process({
         "action": body.action,
@@ -29,14 +28,13 @@ async def sofia_orchestrate(request: Request, body: SofiaRequest):
         **body.payload,
     })
 
-    # Log action
-    await log_sofia_action({
-        "action_type": body.action,
-        "source_agent": "dashboard",
-        "target_agent": "sofia",
-        "input_data": {"message": body.message, "action": body.action},
-        "output_data": result,
-        "reasoning": result.get("message", ""),
-    })
-
     return result
+
+
+@router.get("/status")
+async def sofia_status(request: Request):
+    """Get full system status from Sofia."""
+    chroma = request.app.state.chroma
+    retriever = RAGRetriever(chroma)
+    sofia = SofiaAgent(retriever, chroma)
+    return await sofia.process({"action": "status"})

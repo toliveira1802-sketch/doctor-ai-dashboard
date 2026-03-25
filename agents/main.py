@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config.settings import settings
 from rag.chroma_client import ChromaManager
+from services.scheduler import init_scheduler
 from api.routes import chat, orchestrate, insights, ingest, rag, health
 
 
@@ -15,8 +16,14 @@ async def lifespan(app: FastAPI):
     chroma.initialize_collections()
     app.state.chroma = chroma
     print("ChromaDB collections initialized")
+
+    # Start scheduled jobs
+    init_scheduler(chroma)
+
     yield
     # Shutdown
+    from services.scheduler import scheduler
+    scheduler.shutdown(wait=False)
     print("Shutting down agents...")
 
 
