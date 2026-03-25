@@ -2,12 +2,60 @@ import json
 import uuid
 
 from fastapi import APIRouter, Request, UploadFile, File, Form
+from pydantic import BaseModel
 from models.document import IngestResponse
 from rag.embeddings import embedding_service
 from ingestion.chunker import chunk_text
+from ingestion.pipeline import IngestionPipeline
 from services.supabase_client import save_document_registry
 
 router = APIRouter()
+
+
+# --- URL and Perplexity ingestion models ---
+
+class IngestURLRequest(BaseModel):
+    url: str
+    title: str | None = None
+    target_collection: str = "study_industry_news"
+
+
+class IngestPerplexityRequest(BaseModel):
+    query: str
+    target_collection: str = "study_industry_news"
+    model: str = "sonar-pro"
+    search_recency: str | None = None
+
+
+# --- URL ingestion endpoint ---
+
+@router.post("/ingest-url")
+async def ingest_from_url(request: Request, body: IngestURLRequest):
+    """Scrape a URL and ingest into Study RAG."""
+    chroma = request.app.state.chroma
+    pipeline = IngestionPipeline(chroma)
+    result = await pipeline.ingest_from_url(
+        url=body.url,
+        title=body.title,
+        target_collection=body.target_collection,
+    )
+    return result
+
+
+# --- Perplexity research endpoint ---
+
+@router.post("/ingest-perplexity")
+async def ingest_from_perplexity(request: Request, body: IngestPerplexityRequest):
+    """Research via Perplexity and ingest into Study RAG."""
+    chroma = request.app.state.chroma
+    pipeline = IngestionPipeline(chroma)
+    result = await pipeline.ingest_from_perplexity(
+        query=body.query,
+        target_collection=body.target_collection,
+        model=body.model,
+        search_recency=body.search_recency,
+    )
+    return result
 
 # Multimodal format mapping
 AUDIO_FORMATS = {".mp3", ".mp4", ".mpeg", ".mpga", ".m4a", ".wav", ".webm", ".ogg", ".flac"}
