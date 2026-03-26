@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Figma__generate_diagram",
+      "Read(//c/Users/Doctor/OneDrive/Documentos/GitHub/**)",
+      "Read(//c/Users/Doctor/**)",
+      "Bash(find /c/Users/Doctor -maxdepth 5 -path */secondbrain*)",
+      "Bash(find c:/Users/Doctor/OneDrive/Documentos/GitHub/doctor-ai-dashboard/SecondBrain -type f -name *.md)",
+      "Bash(docker-compose up:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Doctor\\Downloads\\skill\\anna-sales-orchestrator\\references"
+    ]
+  }
+}
