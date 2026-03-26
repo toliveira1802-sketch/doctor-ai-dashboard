@@ -6,6 +6,8 @@ const sections = [
     title: 'Core',
     links: [
       { to: '/', label: 'Neural Dashboard', icon: 'N', color: '#00ffff' },
+      { to: '/leads', label: 'CRM Leads', icon: 'CL', color: '#ef4444' },
+      { to: '/logs', label: 'System Logs', icon: 'LG', color: '#f59e0b' },
     ],
   },
   {
@@ -13,7 +15,10 @@ const sections = [
     links: [
       { to: '/ia-agents', label: 'IA Agents', icon: 'IA', color: '#a855f7' },
       { to: '/hub', label: 'Sophia Hub', icon: 'S', color: '#f59e0b' },
-      { to: '/ingestion', label: 'Ingestion', icon: 'IN', color: '#22c55e' },
+      { to: '/rag', label: 'RAG Explorer', icon: 'RE', color: '#22c55e' },
+      { to: '/blog', label: 'Blog Generator', icon: 'BG', color: '#06b6d4' },
+      { to: '/ingestion', label: 'Ingestion', icon: 'IN', color: '#10b981' },
+      { to: '/brain', label: 'Second Brain', icon: 'TH', color: '#a855f7' },
     ],
   },
   {

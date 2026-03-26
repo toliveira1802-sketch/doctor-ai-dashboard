@@ -1,26 +1,9 @@
 import { Router, Request, Response } from "express";
 import { callPython } from "../services/pythonBridge.js";
-import crypto from "crypto";
 
 const router = Router();
 
 // --- Helpers ---
-
-function verifySignature(
-  payload: string,
-  signature: string | undefined,
-  secret: string
-): boolean {
-  if (!signature || !secret) return false;
-  const expected = crypto
-    .createHmac("sha256", secret)
-    .update(payload)
-    .digest("hex");
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expected)
-  );
-}
 
 async function logWebhook(
   source: string,
@@ -56,60 +39,7 @@ async function logWebhook(
   }
 }
 
-// --- Come App Webhook ---
-
-router.post("/come", async (req: Request, res: Response) => {
-  const startTime = Date.now();
-
-  try {
-    const { client_id, message, channel, metadata, phone, name } = req.body;
-
-    // Validate required fields
-    if (!message && !client_id) {
-      await logWebhook("come", "rejected", req.body, null, "Missing required fields");
-      res.status(400).json({ error: "message or client_id is required" });
-      return;
-    }
-
-    // Verify signature if secret is configured
-    const secret = process.env.COME_WEBHOOK_SECRET;
-    if (secret) {
-      const signature = req.headers["x-come-signature"] as string;
-      const rawBody = JSON.stringify(req.body);
-      if (!verifySignature(rawBody, signature, secret)) {
-        await logWebhook("come", "unauthorized", req.body, null, "Invalid signature");
-        res.status(401).json({ error: "Invalid signature" });
-        return;
-      }
-    }
-
-    // Forward to Ana via Python service
-    const result = await callPython("/agent/ana/chat", "POST", {
-      message: message || "",
-      external_client_id: client_id,
-      client_name: name,
-      client_phone: phone,
-      channel: channel || "come_app",
-      metadata: metadata || {},
-    });
-
-    const duration = Date.now() - startTime;
-    await logWebhook("come", "ok", req.body, { ...result, duration_ms: duration }, null);
-
-    res.json({
-      status: "ok",
-      ...result,
-      duration_ms: duration,
-    });
-  } catch (error: any) {
-    const duration = Date.now() - startTime;
-    await logWebhook("come", "error", req.body, null, error.message);
-    console.error(`[webhook/come] Error (${duration}ms):`, error.message);
-    res.status(500).json({ error: error.message, duration_ms: duration });
-  }
-});
-
-// --- Kommo/WhatsApp Webhook ---
+// --- Kommo Webhook (WhatsApp, Instagram, Facebook, Telegram, TikTok) ---
 
 router.post("/kommo", async (req: Request, res: Response) => {
   const startTime = Date.now();
@@ -154,7 +84,7 @@ router.post("/kommo", async (req: Request, res: Response) => {
       return;
     }
 
-    // Forward to Ana
+    // Forward to Anna (Sales Orchestrator)
     const result = await callPython("/agent/ana/chat", "POST", {
       message: messageText,
       external_client_id: clientId,
@@ -164,28 +94,59 @@ router.post("/kommo", async (req: Request, res: Response) => {
       metadata: {
         kommo_lead_id: leadId,
         event_type: eventType,
-        raw_event: payload,
       },
     });
 
     const duration = Date.now() - startTime;
+    const replyText = result.message || "";
 
-    // If Ana classified the lead, update Kommo
+    // RETURN PATH: Send Anna's reply back to WhatsApp via Kommo Talk API
+    let replySent = false;
+    if (replyText && clientId) {
+      try {
+        await sendKommoMessage(clientId, replyText);
+        replySent = true;
+        console.log(`[webhook/kommo] Reply sent to ${clientName || clientId} (${duration}ms)`);
+      } catch (e: any) {
+        console.error(`[webhook/kommo] Failed to send reply:`, e.message);
+      }
+    }
+
+    // If Anna classified the lead, update Kommo lead fields
     if (result.classification && leadId) {
       try {
         await updateKommoLead(leadId, {
           classification: result.classification,
-          vehicle_info: result.extracted_data || {},
+          vehicle_info: result.classification?.extracted_info || result.extracted_data || {},
         });
       } catch (e: any) {
         console.error(`[webhook/kommo] Failed to update Kommo lead:`, e.message);
       }
     }
 
-    await logWebhook("kommo", "ok", { messageText, clientId, leadId }, { ...result, duration_ms: duration }, null);
+    // Log sales_ops if present (learning notes, microtasks)
+    if (result.sales_ops) {
+      try {
+        await logWebhook("anna_sales_ops", "ok", {
+          lead_id: leadId,
+          client_id: clientId,
+          stage: result.sales_ops.stage,
+        }, result.sales_ops, null);
+      } catch {
+        // Silent
+      }
+    }
+
+    await logWebhook("kommo", "ok", { messageText, clientId, leadId }, {
+      reply: replyText.substring(0, 200),
+      reply_sent: replySent,
+      classification: result.classification?.label,
+      duration_ms: duration,
+    }, null);
 
     res.json({
       status: "ok",
+      reply_sent: replySent,
       ...result,
       duration_ms: duration,
     });
@@ -197,7 +158,54 @@ router.post("/kommo", async (req: Request, res: Response) => {
   }
 });
 
-// --- Kommo API Helper ---
+// --- Kommo API: Send Message Back ---
+
+async function sendKommoMessage(chatId: string, text: string) {
+  const token = process.env.KOMMO_TOKEN;
+  const domain = process.env.KOMMO_DOMAIN;
+  if (!token || !domain) {
+    throw new Error("KOMMO_TOKEN or KOMMO_DOMAIN not configured");
+  }
+
+  // Kommo Talk API — send message to existing chat
+  // Uses the Chats API to post a message back to the conversation
+  const resp = await fetch(`https://${domain}/api/v4/chats/${chatId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      text,
+      type: "text",
+    }),
+  });
+
+  if (!resp.ok) {
+    // Fallback: try via notes API on the lead
+    const noteResp = await fetch(`https://${domain}/api/v4/contacts/${chatId}/notes`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify([
+        {
+          note_type: "common",
+          params: {
+            text: `[Anna IA] ${text}`,
+          },
+        },
+      ]),
+    });
+    if (!noteResp.ok) {
+      const errText = await noteResp.text();
+      throw new Error(`Kommo send failed: ${noteResp.status} ${errText}`);
+    }
+  }
+}
+
+// --- Kommo API: Update Lead ---
 
 async function updateKommoLead(
   leadId: string,
@@ -245,7 +253,6 @@ router.get("/status", async (_req: Request, res: Response) => {
   res.json({
     status: "ok",
     webhooks: {
-      come: { endpoint: "/api/webhook/come", method: "POST", auth: !!process.env.COME_WEBHOOK_SECRET },
       kommo: { endpoint: "/api/webhook/kommo", method: "POST", auth: !!process.env.KOMMO_TOKEN },
     },
   });

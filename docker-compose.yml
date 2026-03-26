@@ -19,7 +19,30 @@ services:
     volumes:
       - ./agents:/app
       - ./uploads:/app/uploads
+      - ./SecondBrain:/app/SecondBrain
     command: uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+  evolution:
+    image: atendai/evolution-api:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY:-pitoco-loco-key}
+      - WEBHOOK_GLOBAL_URL=http://gateway:3001/api/evolution/webhook
+      - WEBHOOK_GLOBAL_ENABLED=true
+      - WEBHOOK_GLOBAL_WEBHOOK_BY_EVENTS=true
+      - WEBHOOK_EVENTS_MESSAGES_UPSERT=true
+      - WEBHOOK_EVENTS_QRCODE_UPDATED=true
+      - WEBHOOK_EVENTS_CONNECTION_UPDATE=true
+      - CONFIG_SESSION_PHONE_CLIENT=Pitoco Loco
+      - CONFIG_SESSION_PHONE_NAME=Chrome
+      - LOG_LEVEL=WARN
+      - DEL_INSTANCE=false
+      - DATABASE_ENABLED=false
+      - REDIS_ENABLED=false
+    volumes:
+      - evolution_data:/evolution/instances
+    restart: unless-stopped
 
   gateway:
     build: ./gateway
@@ -28,6 +51,8 @@ services:
     env_file: .env
     depends_on:
       - python-agents
+      - evolution
 
 volumes:
   chroma_data:
+  evolution_data:

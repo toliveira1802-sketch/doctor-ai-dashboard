@@ -1,5 +1,5 @@
 // Hardcoded for local dev - Docker Compose will override via env
-const BASE_URL = process.env.PYTHON_SERVICE_URL ?? "http://127.0.0.1:8006";
+const BASE_URL = process.env.PYTHON_SERVICE_URL ?? "http://127.0.0.1:8000";
 
 console.log(`[PythonBridge] URL: ${BASE_URL}`);
 

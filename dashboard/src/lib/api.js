@@ -27,16 +27,42 @@ export const getConversation = (id) => request(`/chat/conversations/${id}`);
 export const analyzeVehicle = (brand, model, year) =>
   request('/insights/analyze', 'POST', { action: 'analyze_vehicle', brand, model, year });
 export const detectPatterns = () => request('/insights/analyze', 'POST', { action: 'detect_patterns' });
+
+// Blog
 export const generateBlog = (topic, style = 'informativo') =>
-  request('/insights/analyze', 'POST', { topic, style });
+  request('/insights/blog/generate', 'POST', { topic, style });
+export const generateBlogAuto = () =>
+  request('/insights/blog/auto', 'POST', {});
 
 // RAG
 export const getCollections = () => request('/sofia/command', 'POST', { action: 'status' });
 export const searchRAG = (query, collections = null) =>
-  request('/sofia/command', 'POST', { action: 'search_study', payload: { query } });
+  request('/rag/query', 'POST', { query, collections, n_results: 10 });
+export const getRagCollections = () => request('/rag/collections');
 
 // Dashboard metrics
 export const getDashboardMetrics = () => request('/dashboard/metrics');
+
+// Leads / CRM
+export const getLeads = (limit = 50) => request(`/dashboard/leads?limit=${limit}`);
+export const getLeadDetails = (id) => request(`/dashboard/leads/${id}`);
+export const getLeadStats = () => request('/dashboard/lead-stats');
+
+// Logs / Webhooks
+export const getWebhookLogs = (limit = 50) => request(`/dashboard/logs?limit=${limit}`);
+export const getSystemHealth = () => request('/health');
+
+// Thales / Second Brain
+export const thalesSync = (force = false) => request('/thales/sync', 'POST', { force });
+export const thalesStatus = () => request('/thales/status');
+export const thalesSearch = (query) => request('/thales/search', 'POST', { query });
+export const thalesChat = (message, history = []) => request('/thales/chat', 'POST', { message, history });
+
+// Evolution API / WhatsApp
+export const evoCreateInstance = () => request('/evolution/create-instance', 'POST', {});
+export const evoGetQR = () => request('/evolution/qrcode');
+export const evoStatus = () => request('/evolution/status');
+export const evoSendMessage = (number, message) => request('/evolution/send', 'POST', { number, message });
 
 // Ingestion
 export const ingestFile = async (file, title, targetRag, targetCollection) => {
