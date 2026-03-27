@@ -14,6 +14,9 @@ services:
     ports:
       - "8000:8000"
     env_file: .env
+    environment:
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
     depends_on:
       - chromadb
     volumes:
@@ -22,12 +25,25 @@ services:
       - ./SecondBrain:/app/SecondBrain
     command: uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
+  evolution-db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=evolution
+      - POSTGRES_PASSWORD=evolution123
+      - POSTGRES_DB=evolution
+    volumes:
+      - evolution_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
   evolution:
     image: atendai/evolution-api:latest
     ports:
       - "8080:8080"
     environment:
       - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY:-pitoco-loco-key}
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://evolution:evolution123@evolution-db:5432/evolution
+      - DATABASE_ENABLED=true
       - WEBHOOK_GLOBAL_URL=http://gateway:3001/api/evolution/webhook
       - WEBHOOK_GLOBAL_ENABLED=true
       - WEBHOOK_GLOBAL_WEBHOOK_BY_EVENTS=true
@@ -38,10 +54,11 @@ services:
       - CONFIG_SESSION_PHONE_NAME=Chrome
       - LOG_LEVEL=WARN
       - DEL_INSTANCE=false
-      - DATABASE_ENABLED=false
       - REDIS_ENABLED=false
     volumes:
       - evolution_data:/evolution/instances
+    depends_on:
+      - evolution-db
     restart: unless-stopped
 
   gateway:
@@ -49,6 +66,9 @@ services:
     ports:
       - "3001:3001"
     env_file: .env
+    environment:
+      - PYTHON_SERVICE_URL=http://python-agents:8000
+      - EVOLUTION_URL=http://evolution:8080
     depends_on:
       - python-agents
       - evolution
@@ -56,3 +76,4 @@ services:
 volumes:
   chroma_data:
   evolution_data:
+  evolution_db_data:
