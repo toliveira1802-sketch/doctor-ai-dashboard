@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     embedding_model: str = "text-embedding-3-small"
     embedding_dimensions: int = 1536
 
+    # Kommo CRM
+    kommo_token: str = ""
+    kommo_domain: str = ""
+
     # Chunking
     chunk_size: int = 512
     chunk_overlap: int = 64
