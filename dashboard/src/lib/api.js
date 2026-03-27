@@ -42,6 +42,7 @@ export const getRagCollections = () => request('/rag/collections');
 
 // Dashboard metrics
 export const getDashboardMetrics = () => request('/dashboard/metrics');
+export const getActivityStream = (limit = 20) => request(`/dashboard/activity?limit=${limit}`);
 
 // Leads / CRM
 export const getLeads = (limit = 50) => request(`/dashboard/leads?limit=${limit}`);
@@ -58,11 +59,16 @@ export const thalesStatus = () => request('/thales/status');
 export const thalesSearch = (query) => request('/thales/search', 'POST', { query });
 export const thalesChat = (message, history = []) => request('/thales/chat', 'POST', { message, history });
 
-// Evolution API / WhatsApp
+// Evolution API / WhatsApp — Pitoco Loco
 export const evoCreateInstance = () => request('/evolution/create-instance', 'POST', {});
 export const evoGetQR = () => request('/evolution/qrcode');
 export const evoStatus = () => request('/evolution/status');
 export const evoSendMessage = (number, message) => request('/evolution/send', 'POST', { number, message });
+
+// Evolution API / WhatsApp — Anna
+export const evoAnnaCreateInstance = () => request('/evolution/anna/create-instance', 'POST', {});
+export const evoAnnaGetQR = () => request('/evolution/anna/qrcode');
+export const evoAnnaStatus = () => request('/evolution/anna/status');
 
 // Ingestion
 export const ingestFile = async (file, title, targetRag, targetCollection) => {
@@ -88,3 +94,12 @@ export const ingestPerplexity = (query, targetCollection, model = 'sonar-pro') =
 
 export const getIngestCollections = () => request('/ingest/collections', 'GET');
 export const getIngestHistory = () => request('/ingest/history', 'GET');
+
+// Obsidian Vault
+export const obsidianListFiles = (folder = '') => request(`/obsidian/files?folder=${encodeURIComponent(folder)}`);
+export const obsidianReadNote = (path) => request(`/obsidian/note?path=${encodeURIComponent(path)}`);
+export const obsidianWriteNote = (path, content, frontmatter = {}) =>
+  request('/obsidian/note', 'POST', { path, content, frontmatter });
+export const obsidianDailyNote = (date = null) => request('/obsidian/daily', 'POST', { date });
+export const obsidianAppendDaily = (entry, date = null) =>
+  request('/obsidian/daily/append', 'POST', { entry, date });

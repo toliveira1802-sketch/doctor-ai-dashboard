@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { thalesSync, thalesStatus, thalesSearch, thalesChat, evoCreateInstance, evoGetQR, evoStatus } from '../lib/api'
+import { thalesSync, thalesStatus, thalesSearch, thalesChat, evoCreateInstance, evoGetQR, evoStatus, obsidianListFiles, obsidianReadNote, obsidianWriteNote, obsidianDailyNote, obsidianAppendDaily } from '../lib/api'
 
 const TABS = [
   { id: 'chat', label: 'Chat', desc: 'Conversar com Pitoco Loco' },
+  { id: 'browser', label: 'Vault Browser', desc: 'Navegar & editar notas' },
+  { id: 'daily', label: 'Daily Note', desc: 'Nota do dia' },
   { id: 'whatsapp', label: 'WhatsApp', desc: 'Conectar via QR Code' },
-  { id: 'vault', label: 'Vault', desc: 'Status & Sync' },
+  { id: 'vault', label: 'Sync', desc: 'Status & Sync RAG' },
   { id: 'search', label: 'Buscar', desc: 'Pesquisar no vault' },
 ]
 
@@ -29,6 +31,324 @@ function VaultFileCard({ folder, count, collection }) {
         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded" style={{ background: `${color}15`, color }}>
           {collection.replace('study_', '').replace('ops_', '')}
         </span>
+      </div>
+    </div>
+  )
+}
+
+/* ========== Vault Browser ========== */
+function VaultBrowser() {
+  const [currentFolder, setCurrentFolder] = useState('')
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedNote, setSelectedNote] = useState(null)
+  const [noteContent, setNoteContent] = useState('')
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [breadcrumb, setBreadcrumb] = useState([])
+
+  const loadFolder = async (folder = '') => {
+    setLoading(true)
+    setSelectedNote(null)
+    try {
+      const data = await obsidianListFiles(folder)
+      setItems(data.items || [])
+      setCurrentFolder(folder)
+      // Build breadcrumb
+      const parts = folder ? folder.split('/') : []
+      const crumbs = [{ label: 'Vault', path: '' }]
+      let acc = ''
+      for (const p of parts) {
+        acc = acc ? `${acc}/${p}` : p
+        crumbs.push({ label: p, path: acc })
+      }
+      setBreadcrumb(crumbs)
+    } catch (err) {
+      setItems([])
+    }
+    setLoading(false)
+  }
+
+  const openNote = async (notePath) => {
+    try {
+      const data = await obsidianReadNote(notePath)
+      setSelectedNote(notePath)
+      setNoteContent(data.content || data.raw || '')
+      setEditing(false)
+    } catch (err) {
+      setSelectedNote(null)
+    }
+  }
+
+  const saveNote = async () => {
+    if (!selectedNote) return
+    setSaving(true)
+    try {
+      await obsidianWriteNote(selectedNote, noteContent)
+      setEditing(false)
+    } catch {}
+    setSaving(false)
+  }
+
+  useEffect(() => { loadFolder('') }, [])
+
+  const inputStyle = {
+    background: 'rgba(0,255,255,0.03)',
+    border: '1px solid rgba(0,255,255,0.1)',
+    color: '#e5e7eb',
+  }
+
+  const FOLDER_COLORS = {
+    '00': '#06b6d4', '01': '#a855f7', '02': '#3b82f6', '03': '#f59e0b',
+    '04': '#22c55e', '05': '#ef4444', '06': '#3b82f6', '07': '#ec4899',
+    '08': '#06b6d4', '99': '#6b7280',
+  }
+
+  return (
+    <div className="space-y-4 animate-fade-in-up">
+      {/* Breadcrumb */}
+      <div className="glass-card rounded-lg px-4 py-3 flex items-center gap-2 flex-wrap">
+        {breadcrumb.map((crumb, i) => (
+          <div key={crumb.path} className="flex items-center gap-2">
+            {i > 0 && <span className="text-[10px] font-mono text-gray-600">/</span>}
+            <button
+              onClick={() => loadFolder(crumb.path)}
+              className="text-[10px] font-mono hover:underline transition"
+              style={{ color: i === breadcrumb.length - 1 ? '#00ffff' : '#6b7280' }}
+            >
+              {crumb.label}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-12 gap-4">
+        {/* File list */}
+        <div className={`${selectedNote ? 'col-span-4' : 'col-span-12'} glass-card rounded-lg p-4`}>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <span className="w-4 h-4 border border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+            </div>
+          ) : items.length === 0 ? (
+            <p className="text-[10px] font-mono text-gray-600 text-center py-8">Pasta vazia</p>
+          ) : (
+            <div className="space-y-1">
+              {items.map(item => {
+                const prefix = item.name.substring(0, 2)
+                const color = FOLDER_COLORS[prefix] || '#00ffff'
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => item.type === 'folder' ? loadFolder(item.path) : openNote(item.path)}
+                    className={`w-full flex items-center gap-3 py-2.5 px-3 rounded-lg text-left transition hover:bg-white/[0.03] ${selectedNote === item.path ? 'bg-white/[0.04]' : ''}`}
+                  >
+                    <div
+                      className="w-7 h-7 rounded flex items-center justify-center text-[10px] font-mono font-bold shrink-0"
+                      style={{
+                        background: item.type === 'folder' ? `${color}15` : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${item.type === 'folder' ? `${color}30` : 'rgba(255,255,255,0.06)'}`,
+                        color: item.type === 'folder' ? color : '#9ca3af',
+                      }}
+                    >
+                      {item.type === 'folder' ? '📁' : '📄'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-mono text-gray-300 truncate">{item.name.replace('.md', '')}</p>
+                      <p className="text-[9px] font-mono text-gray-600">
+                        {item.type === 'folder' ? `${item.files} notas` : `${(item.size / 1024).toFixed(1)}kb`}
+                      </p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Note viewer/editor */}
+        {selectedNote && (
+          <div className="col-span-8 glass-card rounded-lg flex flex-col" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+            <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(0,255,255,0.06)' }}>
+              <div className="min-w-0">
+                <p className="text-[11px] font-mono text-gray-300 truncate">{selectedNote}</p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                {editing ? (
+                  <>
+                    <button
+                      onClick={saveNote}
+                      disabled={saving}
+                      className="text-[9px] font-mono uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all"
+                      style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: '#22c55e' }}
+                    >
+                      {saving ? 'Salvando...' : 'Salvar'}
+                    </button>
+                    <button
+                      onClick={() => setEditing(false)}
+                      className="text-[9px] font-mono uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all"
+                      style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', color: '#ef4444' }}
+                    >
+                      Cancelar
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="text-[9px] font-mono uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all"
+                    style={{ background: 'rgba(0,255,255,0.05)', border: '1px solid rgba(0,255,255,0.15)', color: '#00ffff' }}
+                  >
+                    Editar
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {editing ? (
+                <textarea
+                  value={noteContent}
+                  onChange={(e) => setNoteContent(e.target.value)}
+                  className="w-full h-full min-h-[400px] rounded-lg px-4 py-3 text-xs font-mono placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 resize-none"
+                  style={inputStyle}
+                />
+              ) : (
+                <div className="text-xs font-mono text-gray-300 whitespace-pre-wrap leading-relaxed">
+                  {noteContent || <span className="text-gray-600">Nota vazia</span>}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ========== Daily Note Panel ========== */
+function DailyNotePanel() {
+  const [daily, setDaily] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [newEntry, setNewEntry] = useState('')
+  const [section, setSection] = useState('Notas Pessoais')
+  const [appending, setAppending] = useState(false)
+
+  const loadDaily = async () => {
+    setLoading(true)
+    try {
+      const data = await obsidianDailyNote()
+      setDaily(data)
+    } catch {
+      setDaily(null)
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => { loadDaily() }, [])
+
+  const handleAppend = async () => {
+    if (!newEntry.trim() || appending) return
+    setAppending(true)
+    try {
+      await obsidianAppendDaily(newEntry, null)
+      setNewEntry('')
+      // Reload to see changes
+      await loadDaily()
+    } catch {}
+    setAppending(false)
+  }
+
+  const SECTIONS = ['Resumo do Dia', 'Atividades dos Agentes', 'Leads & Conversas', 'Insights & Decisoes', 'Notas Pessoais']
+
+  const inputStyle = {
+    background: 'rgba(0,255,255,0.03)',
+    border: '1px solid rgba(0,255,255,0.1)',
+    color: '#e5e7eb',
+  }
+
+  return (
+    <div className="space-y-4 animate-fade-in-up">
+      {/* Add entry */}
+      <div className="glass-card rounded-lg p-4">
+        <p className="text-[10px] font-mono uppercase tracking-widest mb-3" style={{ color: '#00ffff60' }}>
+          Adicionar entrada
+        </p>
+        <div className="flex gap-2 mb-3">
+          {SECTIONS.map(s => (
+            <button
+              key={s}
+              onClick={() => setSection(s)}
+              className="text-[9px] font-mono px-2.5 py-1.5 rounded-lg transition-all"
+              style={section === s ? {
+                background: 'rgba(0,255,255,0.08)',
+                border: '1px solid rgba(0,255,255,0.2)',
+                color: '#00ffff',
+              } : {
+                background: 'rgba(0,20,40,0.3)',
+                border: '1px solid rgba(0,255,255,0.06)',
+                color: '#6b7280',
+              }}
+            >
+              {s.replace('do Dia', '').replace('dos Agentes', '').replace('& Conversas', '').replace('& Decisoes', '').trim()}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newEntry}
+            onChange={(e) => setNewEntry(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAppend()}
+            placeholder="Escrever nota..."
+            className="flex-1 rounded-lg px-4 py-2.5 text-xs font-mono placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+            style={inputStyle}
+          />
+          <button
+            onClick={handleAppend}
+            disabled={appending || !newEntry.trim()}
+            className="rounded-lg px-5 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider transition-all"
+            style={{
+              background: 'rgba(34,197,94,0.1)',
+              border: '1px solid rgba(34,197,94,0.25)',
+              color: '#22c55e',
+            }}
+          >
+            {appending ? '...' : 'Adicionar'}
+          </button>
+        </div>
+      </div>
+
+      {/* Daily note content */}
+      <div className="glass-card rounded-lg p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-[10px] font-mono uppercase tracking-widest" style={{ color: '#00ffff60' }}>
+              Daily Note
+            </p>
+            <p className="text-[9px] font-mono text-gray-600 mt-0.5">
+              {daily?.date || 'Carregando...'} {daily?.created ? '(criada agora)' : ''}
+            </p>
+          </div>
+          <button
+            onClick={loadDaily}
+            className="text-[9px] font-mono uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all hover:bg-white/[0.03]"
+            style={{ border: '1px solid rgba(0,255,255,0.1)', color: '#00ffff60' }}
+          >
+            Refresh
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <span className="w-4 h-4 border border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+          </div>
+        ) : daily ? (
+          <div className="text-xs font-mono text-gray-300 whitespace-pre-wrap leading-relaxed">
+            {daily.content}
+          </div>
+        ) : (
+          <p className="text-[10px] font-mono text-gray-600 text-center py-8">
+            Nao foi possivel carregar a daily note. Verifique se o gateway esta rodando.
+          </p>
+        )}
       </div>
     </div>
   )
@@ -420,6 +740,16 @@ export default function SecondBrain() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* VAULT BROWSER TAB */}
+          {tab === 'browser' && (
+            <VaultBrowser />
+          )}
+
+          {/* DAILY NOTE TAB */}
+          {tab === 'daily' && (
+            <DailyNotePanel />
           )}
 
           {/* WHATSAPP TAB */}

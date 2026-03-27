@@ -15,6 +15,7 @@ from services.supabase_client import save_document_registry
 
 # Mapping: vault folder prefix → target RAG collection
 FOLDER_MAP = {
+    "00": "ops_daily_notes",            # Daily notes (auto-generated)
     "01": "study_business_insights",    # Strategy, business
     "02": "study_business_insights",    # Projects
     "03": "study_car_manuals",          # Technical knowledge

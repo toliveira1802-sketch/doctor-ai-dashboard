@@ -11,6 +11,7 @@ import openclawRoutes from "./routes/openclaw.routes.js";
 import ragRoutes from "./routes/rag.routes.js";
 import thalesRoutes from "./routes/thales.routes.js";
 import evolutionRoutes from "./routes/evolution.routes.js";
+import obsidianRoutes from "./routes/obsidian.routes.js";
 
 const app = express();
 const PORT = parseInt(process.env.GATEWAY_PORT || "3001");
@@ -97,6 +98,7 @@ app.use("/api/openclaw", openclawRoutes);
 app.use("/api/rag", ragRoutes);
 app.use("/api/thales", thalesRoutes);
 app.use("/api/evolution", evolutionRoutes);
+app.use("/api/obsidian", obsidianRoutes);
 
 // Start
 app.listen(PORT, () => {

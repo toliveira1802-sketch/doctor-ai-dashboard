@@ -6,6 +6,7 @@ const router = Router();
 const EVOLUTION_URL = process.env.EVOLUTION_URL || "http://evolution:8080";
 const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "pitoco-loco-key";
 const INSTANCE_NAME = process.env.EVOLUTION_INSTANCE || "pitoco-loco";
+const ANNA_INSTANCE = "anna-sales";
 
 const evoHeaders = () => ({
   "Content-Type": "application/json",
@@ -88,118 +89,137 @@ router.post("/send", async (req: Request, res: Response) => {
   }
 });
 
+// --- Anna Instance Management ---
+
+// POST /api/evolution/anna/create-instance
+router.post("/anna/create-instance", async (_req: Request, res: Response) => {
+  try {
+    const resp = await fetch(`${EVOLUTION_URL}/instance/create`, {
+      method: "POST",
+      headers: evoHeaders(),
+      body: JSON.stringify({
+        instanceName: ANNA_INSTANCE,
+        integration: "WHATSAPP-BAILEYS",
+        qrcode: true,
+      }),
+    });
+    res.json(await resp.json());
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/evolution/anna/qrcode
+router.get("/anna/qrcode", async (_req: Request, res: Response) => {
+  try {
+    const resp = await fetch(`${EVOLUTION_URL}/instance/connect/${ANNA_INSTANCE}`, { headers: evoHeaders() });
+    res.json(await resp.json());
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/evolution/anna/status
+router.get("/anna/status", async (_req: Request, res: Response) => {
+  try {
+    const resp = await fetch(`${EVOLUTION_URL}/instance/connectionState/${ANNA_INSTANCE}`, { headers: evoHeaders() });
+    res.json({ instance: ANNA_INSTANCE, ...(await resp.json()) });
+  } catch (error: any) {
+    res.json({ instance: ANNA_INSTANCE, state: "offline", error: error.message });
+  }
+});
+
 // --- Webhook (receives messages from WhatsApp) ---
+
+async function logToSupabase(source: string, payload: any, result: any) {
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !supabaseKey) return;
+    await fetch(`${supabaseUrl}/rest/v1/webhook_logs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        source,
+        status: "ok",
+        payload,
+        result,
+        created_at: new Date().toISOString(),
+      }),
+    });
+  } catch { /* silent */ }
+}
 
 router.post("/webhook", async (req: Request, res: Response) => {
   try {
     const payload = req.body;
     const event = payload.event;
+    const instanceName = payload.instance || "";
 
-    // QR code updated — just acknowledge
-    if (event === "qrcode.updated") {
-      console.log("[Evolution] QR code updated");
+    // QR code / connection events — just acknowledge
+    if (event === "qrcode.updated" || event === "connection.update") {
+      console.log(`[Evolution/${instanceName}] ${event}: ${payload.data?.state || "updated"}`);
       res.json({ status: "ok", event });
       return;
     }
 
-    // Connection update
-    if (event === "connection.update") {
-      console.log(`[Evolution] Connection: ${payload.data?.state || "unknown"}`);
-      res.json({ status: "ok", event });
-      return;
-    }
-
-    // New message received
+    // New message
     if (event === "messages.upsert") {
       const msg = payload.data;
-      if (!msg) {
-        res.json({ status: "ok", action: "skipped", reason: "no_data" });
+      if (!msg || msg.key?.fromMe) {
+        res.json({ status: "ok", action: "skipped" });
         return;
       }
 
-      // Skip outgoing messages (fromMe)
-      if (msg.key?.fromMe) {
-        res.json({ status: "ok", action: "skipped", reason: "from_me" });
-        return;
-      }
-
-      const messageText =
-        msg.message?.conversation ||
-        msg.message?.extendedTextMessage?.text ||
-        "";
-
+      const messageText = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
       if (!messageText) {
         res.json({ status: "ok", action: "skipped", reason: "no_text" });
         return;
       }
 
       const remoteJid = msg.key?.remoteJid || "";
-      // Extract phone number from JID (5511999999999@s.whatsapp.net)
       const phone = remoteJid.replace("@s.whatsapp.net", "").replace("@g.us", "");
       const pushName = msg.pushName || "";
 
-      console.log(`[Evolution] Message from ${pushName} (${phone}): ${messageText.substring(0, 50)}...`);
+      // Route by instance: anna-sales → Anna agent, pitoco-loco → Pitoco Loco
+      const isAnna = instanceName === ANNA_INSTANCE;
+      const agentEndpoint = isAnna ? "/agent/ana/chat" : "/agent/thales/chat";
+      const agentBody = isAnna
+        ? { message: messageText, external_client_id: phone, client_name: pushName, client_phone: phone, channel: "whatsapp_evolution" }
+        : { message: messageText, history: [] };
+      const replyInstance = isAnna ? ANNA_INSTANCE : INSTANCE_NAME;
 
-      // Send to Pitoco Loco
-      const result = await callPython("/agent/thales/chat", "POST", {
-        message: messageText,
-        history: [],
-      });
+      console.log(`[Evolution/${replyInstance}] ${pushName} (${phone}): ${messageText.substring(0, 50)}...`);
 
-      const replyText = result.message || result.error || "Nao consegui processar.";
+      const result = await callPython(agentEndpoint, "POST", agentBody);
+      const replyText = result.message || "Nao consegui processar.";
 
-      // Send reply back via Evolution
+      // Send reply back
       try {
-        await fetch(
-          `${EVOLUTION_URL}/message/sendText/${INSTANCE_NAME}`,
-          {
-            method: "POST",
-            headers: evoHeaders(),
-            body: JSON.stringify({
-              number: phone,
-              text: replyText,
-            }),
-          }
-        );
+        await fetch(`${EVOLUTION_URL}/message/sendText/${replyInstance}`, {
+          method: "POST",
+          headers: evoHeaders(),
+          body: JSON.stringify({ number: phone, text: replyText }),
+        });
       } catch (sendErr: any) {
-        console.error(`[Evolution] Failed to send reply: ${sendErr.message}`);
+        console.error(`[Evolution/${replyInstance}] Send failed: ${sendErr.message}`);
       }
 
-      // Log to Supabase
-      try {
-        const supabaseUrl = process.env.SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-        if (supabaseUrl && supabaseKey) {
-          await fetch(`${supabaseUrl}/rest/v1/webhook_logs`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              apikey: supabaseKey,
-              Authorization: `Bearer ${supabaseKey}`,
-              Prefer: "return=minimal",
-            },
-            body: JSON.stringify({
-              source: "evolution_pitoco",
-              status: "ok",
-              payload: { phone, pushName, message: messageText },
-              result: { reply: replyText.substring(0, 500) },
-              created_at: new Date().toISOString(),
-            }),
-          });
-        }
-      } catch {
-        // Silent log failure
-      }
+      await logToSupabase(
+        isAnna ? "evolution_anna" : "evolution_pitoco",
+        { phone, pushName, message: messageText },
+        { reply: replyText.substring(0, 500), classification: result.classification }
+      );
 
-      res.json({
-        status: "ok",
-        from: phone,
-        reply_sent: true,
-      });
+      res.json({ status: "ok", instance: replyInstance, from: phone, reply_sent: true });
       return;
     }
 
-    // Unknown event
     res.json({ status: "ok", event: event || "unknown" });
   } catch (error: any) {
     console.error(`[Evolution] Webhook error: ${error.message}`);

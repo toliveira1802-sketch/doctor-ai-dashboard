@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { callPython } from "../services/pythonBridge.js";
+import { appendToDaily } from "../services/dailyNote.js";
 
 const router = Router();
 
@@ -143,6 +144,11 @@ router.post("/kommo", async (req: Request, res: Response) => {
       classification: result.classification?.label,
       duration_ms: duration,
     }, null);
+
+    // Auto-log to Obsidian daily note
+    const classLabel = result.classification?.label ? ` [${result.classification.label}]` : "";
+    const dailyEntry = `**Ana** — ${clientName || clientId}: "${messageText.substring(0, 60)}"${classLabel} (${duration}ms)`;
+    appendToDaily(dailyEntry, "Leads & Conversas");
 
     res.json({
       status: "ok",

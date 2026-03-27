@@ -15,6 +15,7 @@ import BlogGenerator from './pages/BlogGenerator'
 import RagExplorer from './pages/RagExplorer'
 import Logs from './pages/Logs'
 import SecondBrain from './pages/SecondBrain'
+import WhatsApp from './pages/WhatsApp'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -33,6 +34,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/agent-builder" element={<AgentBuilder />} />
           <Route path="/skill-builder" element={<SkillBuilder />} />
           <Route path="/brain" element={<SecondBrain />} />
+          <Route path="/whatsapp" element={<WhatsApp />} />
         </Route>
       </Routes>
     </BrowserRouter>

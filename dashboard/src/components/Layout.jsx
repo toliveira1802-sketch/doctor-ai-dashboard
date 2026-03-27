@@ -7,6 +7,7 @@ const sections = [
     links: [
       { to: '/', label: 'Neural Dashboard', icon: 'N', color: '#00ffff' },
       { to: '/leads', label: 'CRM Leads', icon: 'CL', color: '#ef4444' },
+      { to: '/whatsapp', label: 'WhatsApp', icon: 'WA', color: '#25D366' },
       { to: '/logs', label: 'System Logs', icon: 'LG', color: '#f59e0b' },
     ],
   },

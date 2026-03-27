@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { sofiaStatus } from '../lib/api'
+import { sofiaStatus, getActivityStream } from '../lib/api'
 
 const AGENTS = [
   { id: 'ana', name: 'Ana', role: 'Atendimento & Leads', model: 'GPT-4o-mini', color: '#ec4899', angle: 0 },
@@ -271,25 +271,53 @@ function AgentRow({ agent, status }) {
 
 /* ========== Activity Log ========== */
 function ActivityLog() {
-  const logs = [
-    { time: '14:32', agent: 'Ana', msg: 'Lead classificado: João Silva → HOT', color: '#ec4899' },
-    { time: '14:28', agent: 'Sofia', msg: 'Content promoted: 5 docs → operational', color: '#a855f7' },
-    { time: '14:15', agent: 'Insights', msg: 'Padrão detectado: Hilux 2024 +23% buscas', color: '#3b82f6' },
-    { time: '13:50', agent: 'Simone', msg: 'Blog gerado: "Tendências Automotivas Q1"', color: '#06b6d4' },
-    { time: '13:30', agent: 'Sophia', msg: 'Multi-agent task concluída: análise mercado', color: '#f59e0b' },
-  ]
+  const [activities, setActivities] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchActivities = () => {
+      getActivityStream(15)
+        .then(data => setActivities(data.activities || []))
+        .catch(() => setActivities([]))
+        .finally(() => setLoading(false))
+    }
+    fetchActivities()
+    const interval = setInterval(fetchActivities, 30000) // refresh every 30s
+    return () => clearInterval(interval)
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 py-4 justify-center">
+        <span className="w-3 h-3 border border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+        <span className="text-[10px] font-mono text-gray-600">Carregando atividades...</span>
+      </div>
+    )
+  }
+
+  if (activities.length === 0) {
+    return (
+      <div className="py-6 text-center">
+        <p className="text-[10px] font-mono text-gray-600">Nenhuma atividade registrada ainda</p>
+        <p className="text-[9px] font-mono text-gray-700 mt-1">Atividades aparecem quando os agentes processam mensagens</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-1">
-      {logs.map((log, i) => (
+      {activities.map((log, i) => (
         <div
-          key={i}
+          key={log.id || i}
           className="flex items-start gap-3 py-2 px-3 rounded-lg hover:bg-white/[0.02] transition animate-log-in"
           style={{ animationDelay: `${i * 100}ms` }}
         >
           <span className="text-[10px] text-gray-600 font-mono w-10 mt-0.5">{log.time}</span>
-          <span className="text-[10px] font-bold font-mono w-14" style={{ color: log.color }}>{log.agent}</span>
-          <span className="text-xs text-gray-400 font-mono">{log.msg}</span>
+          <span className="text-[10px] font-bold font-mono w-14 capitalize" style={{ color: log.color }}>{log.agent}</span>
+          <span className="text-xs text-gray-400 font-mono flex-1">{log.msg}</span>
+          {log.type === 'error' && (
+            <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 shrink-0">ERR</span>
+          )}
         </div>
       ))}
     </div>
