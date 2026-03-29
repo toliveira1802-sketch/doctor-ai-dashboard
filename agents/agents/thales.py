@@ -240,7 +240,8 @@ class ThalesAgent(BaseAgent):
             history = input_data.get("history", [])
 
             # Search both RAGs for context, prioritize vault content
-            results = self.retriever.retrieve(message, n_results=8)
+            from rag.chroma_client import ALL_COLLECTIONS
+            results = self.retriever.retrieve(message, collections=ALL_COLLECTIONS, n_results=8)
             context_parts = []
             for r in results:
                 source = r.metadata.get("vault_path", r.collection)

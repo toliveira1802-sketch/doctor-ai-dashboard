@@ -5,29 +5,29 @@ const sections = [
   {
     title: 'Core',
     links: [
-      { to: '/', label: 'Neural Dashboard', icon: 'N', color: '#00ffff' },
-      { to: '/leads', label: 'CRM Leads', icon: 'CL', color: '#ef4444' },
-      { to: '/whatsapp', label: 'WhatsApp', icon: 'WA', color: '#25D366' },
-      { to: '/logs', label: 'System Logs', icon: 'LG', color: '#f59e0b' },
+      { to: '/', label: 'Dashboard', icon: '◈' },
+      { to: '/leads', label: 'CRM Leads', icon: '≡' },
+      { to: '/whatsapp', label: 'WhatsApp', icon: '💬' },
+      { to: '/logs', label: 'Logs', icon: '⌘' },
     ],
   },
   {
     title: 'Intelligence',
     links: [
-      { to: '/ia-agents', label: 'IA Agents', icon: 'IA', color: '#a855f7' },
-      { to: '/hub', label: 'Sophia Hub', icon: 'S', color: '#f59e0b' },
-      { to: '/rag', label: 'RAG Explorer', icon: 'RE', color: '#22c55e' },
-      { to: '/blog', label: 'Blog Generator', icon: 'BG', color: '#06b6d4' },
-      { to: '/ingestion', label: 'Ingestion', icon: 'IN', color: '#10b981' },
-      { to: '/brain', label: 'Second Brain', icon: 'TH', color: '#a855f7' },
+      { to: '/ia-agents', label: 'IA Agents', icon: '✧' },
+      { to: '/hub', label: 'Sophia Hub', icon: '◎' },
+      { to: '/rag', label: 'RAG Explorer', icon: '◂' },
+      { to: '/blog', label: 'Blog Gen', icon: '▤' },
+      { to: '/ingestion', label: 'Ingestion', icon: '⇡' },
+      { to: '/brain', label: 'Second Brain', icon: '⌥' },
     ],
   },
   {
     title: 'Automation',
     links: [
-      { to: '/agents', label: 'Agents', icon: 'AG', color: '#3b82f6' },
-      { to: '/agent-builder', label: 'Agent Builder', icon: 'AB', color: '#06b6d4' },
-      { to: '/skill-builder', label: 'Skill Builder', icon: 'SK', color: '#ec4899' },
+      { to: '/agents', label: 'Agents', icon: '⚡' },
+      { to: '/agent-builder', label: 'Builder', icon: '⌗' },
+      { to: '/skill-builder', label: 'Skills', icon: '⎋' },
     ],
   },
 ]
@@ -36,103 +36,99 @@ export default function Layout() {
   const [collapsed, setCollapsed] = useState(false)
 
   return (
-    <div className="flex h-screen bg-gray-950 text-gray-100">
+    <div className="flex h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-500/30">
       {/* Sidebar */}
       <nav
-        className={`${collapsed ? 'w-16' : 'w-60'} flex flex-col transition-all duration-200`}
-        style={{
-          background: 'linear-gradient(180deg, rgba(0,10,20,0.95) 0%, rgba(0,5,15,0.98) 100%)',
-          borderRight: '1px solid rgba(0,255,255,0.08)',
-        }}
+        className={`${collapsed ? 'w-16' : 'w-64'} shrink-0 flex flex-col transition-all duration-300 border-r border-slate-200 bg-white shadow-sm z-10`}
       >
         {/* Header */}
-        <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(0,255,255,0.08)' }}>
+        <div className="h-16 px-4 flex items-center justify-between border-b border-slate-100">
           {!collapsed && (
-            <div>
-              <h1 className="text-sm font-bold font-mono tracking-wider" style={{ color: '#00ffff' }}>
-                DOCTOR AI
-              </h1>
-              <p className="text-[9px] font-mono uppercase tracking-[0.25em]" style={{ color: '#00ffff40' }}>
-                Command Center
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <span className="text-white text-xs font-bold leading-none">AI</span>
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-sm font-semibold tracking-wide text-slate-800 leading-tight">
+                  Doctor Auto
+                </h1>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">
+                  Workspace
+                </p>
+              </div>
             </div>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="w-7 h-7 rounded flex items-center justify-center text-xs font-mono transition hover:bg-white/5"
-            style={{ color: '#00ffff60', border: '1px solid rgba(0,255,255,0.1)' }}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
-            {collapsed ? '»' : '«'}
+            {collapsed ? '→' : '←'}
           </button>
         </div>
 
         {/* Links */}
-        <div className="flex-1 py-3 overflow-y-auto">
+        <div className="flex-1 py-4 overflow-y-auto px-3 space-y-6">
           {sections.map((section) => (
-            <div key={section.title} className="mb-3">
+            <div key={section.title}>
               {!collapsed && (
-                <p className="px-4 py-1 text-[9px] font-mono uppercase tracking-[0.3em]" style={{ color: '#00ffff30' }}>
+                <p className="px-2 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                   {section.title}
                 </p>
               )}
-              {section.links.map(({ to, label, icon, color }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-sm font-mono transition-all duration-150 ${
-                      isActive
-                        ? 'text-white'
-                        : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.03]'
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <span
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold tracking-tight transition-all"
-                        style={isActive ? {
-                          background: `${color}20`,
-                          border: `1px solid ${color}50`,
-                          color: color,
-                          boxShadow: `0 0 12px ${color}20`,
-                        } : {
-                          background: 'rgba(255,255,255,0.03)',
-                          border: '1px solid rgba(255,255,255,0.06)',
-                          color: '#6b7280',
-                        }}
-                      >
-                        {icon}
-                      </span>
-                      {!collapsed && (
-                        <span className="font-medium text-xs" style={isActive ? { color } : {}}>
-                          {label}
+              <div className="space-y-1">
+                {section.links.map(({ to, label, icon }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-all duration-200 ${
+                        isActive
+                          ? 'bg-indigo-50 text-indigo-600 font-semibold'
+                          : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <span className={`w-6 flex justify-center text-lg ${isActive ? 'text-indigo-600' : 'text-slate-400'}`}>
+                          {icon}
                         </span>
-                      )}
-                    </>
-                  )}
-                </NavLink>
-              ))}
+                        {!collapsed && <span>{label}</span>}
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
             </div>
           ))}
         </div>
 
         {/* Footer */}
-        <div className="p-3" style={{ borderTop: '1px solid rgba(0,255,255,0.08)' }}>
+        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
           {!collapsed ? (
-            <div className="flex items-center gap-2 px-2">
-              <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#00ffff', boxShadow: '0 0 6px #00ffff60' }} />
-              <span className="text-[9px] font-mono tracking-wider" style={{ color: '#00ffff40' }}>v2.0 — JARVIS</span>
+            <div className="flex items-center gap-3 px-2">
+              <div className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </div>
+              <span className="text-xs text-slate-600 font-medium tracking-wide">System Online</span>
             </div>
           ) : (
-            <div className="w-2 h-2 rounded-full animate-pulse mx-auto" style={{ background: '#00ffff', boxShadow: '0 0 6px #00ffff60' }} />
+            <div className="relative flex h-2 w-2 mx-auto">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </div>
           )}
         </div>
       </nav>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto" style={{ background: 'linear-gradient(135deg, #030812 0%, #0a0f1a 50%, #030812 100%)' }}>
-        <Outlet />
+      <main className="flex-1 overflow-auto bg-slate-50 relative">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.03),transparent_40%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(168,85,247,0.03),transparent_40%)] pointer-events-none" />
+        <div className="relative h-full">
+          <Outlet />
+        </div>
       </main>
     </div>
   )

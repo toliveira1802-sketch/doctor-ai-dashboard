@@ -61,6 +61,19 @@ services:
       - evolution-db
     restart: unless-stopped
 
+  rag:
+    build:
+      context: ./rag-service
+    container_name: rag-service
+    ports:
+      - "8001:8000"
+    environment:
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+    depends_on:
+      - chromadb
+    restart: always
+
   gateway:
     build: ./gateway
     ports:
@@ -68,6 +81,7 @@ services:
     env_file: .env
     environment:
       - PYTHON_SERVICE_URL=http://python-agents:8000
+      - RAG_SERVICE_URL=http://rag:8000
       - EVOLUTION_URL=http://evolution:8080
       - SECONDBRAIN_PATH=/app/SecondBrain
     volumes:
@@ -75,6 +89,7 @@ services:
     depends_on:
       - python-agents
       - evolution
+      - rag
 
 volumes:
   chroma_data:

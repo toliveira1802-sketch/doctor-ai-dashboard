@@ -1,33 +1,18 @@
 import { Router, Request, Response } from "express";
 import { callPython } from "../services/pythonBridge.js";
+import * as whatsappService from "../services/whatsapp.service.js";
 
 const router = Router();
 
-const EVOLUTION_URL = process.env.EVOLUTION_URL || "http://evolution:8080";
-const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "pitoco-loco-key";
 const INSTANCE_NAME = process.env.EVOLUTION_INSTANCE || "pitoco-loco";
 const ANNA_INSTANCE = "anna-sales";
-
-const evoHeaders = () => ({
-  "Content-Type": "application/json",
-  apikey: EVOLUTION_API_KEY,
-});
 
 // --- Instance Management ---
 
 // POST /api/evolution/create-instance — Create WhatsApp instance
 router.post("/create-instance", async (_req: Request, res: Response) => {
   try {
-    const resp = await fetch(`${EVOLUTION_URL}/instance/create`, {
-      method: "POST",
-      headers: evoHeaders(),
-      body: JSON.stringify({
-        instanceName: INSTANCE_NAME,
-        integration: "WHATSAPP-BAILEYS",
-        qrcode: true,
-      }),
-    });
-    const data = await resp.json();
+    const data = await whatsappService.createInstance(INSTANCE_NAME);
     res.json(data);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -37,11 +22,7 @@ router.post("/create-instance", async (_req: Request, res: Response) => {
 // GET /api/evolution/qrcode — Get QR code to connect
 router.get("/qrcode", async (_req: Request, res: Response) => {
   try {
-    const resp = await fetch(
-      `${EVOLUTION_URL}/instance/connect/${INSTANCE_NAME}`,
-      { headers: evoHeaders() }
-    );
-    const data = await resp.json();
+    const data = await whatsappService.getQRCode(INSTANCE_NAME);
     res.json(data);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -51,12 +32,8 @@ router.get("/qrcode", async (_req: Request, res: Response) => {
 // GET /api/evolution/status — Connection status
 router.get("/status", async (_req: Request, res: Response) => {
   try {
-    const resp = await fetch(
-      `${EVOLUTION_URL}/instance/connectionState/${INSTANCE_NAME}`,
-      { headers: evoHeaders() }
-    );
-    const data = await resp.json();
-    res.json({ instance: INSTANCE_NAME, ...data });
+    const data = await whatsappService.getInstanceStatus(INSTANCE_NAME);
+    res.json(data);
   } catch (error: any) {
     res.json({ instance: INSTANCE_NAME, state: "offline", error: error.message });
   }
@@ -70,19 +47,7 @@ router.post("/send", async (req: Request, res: Response) => {
       res.status(400).json({ error: "number and message required" });
       return;
     }
-
-    const resp = await fetch(
-      `${EVOLUTION_URL}/message/sendText/${INSTANCE_NAME}`,
-      {
-        method: "POST",
-        headers: evoHeaders(),
-        body: JSON.stringify({
-          number,
-          text: message,
-        }),
-      }
-    );
-    const data = await resp.json();
+    const data = await whatsappService.sendTextMessage(INSTANCE_NAME, number, message);
     res.json(data);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -94,16 +59,8 @@ router.post("/send", async (req: Request, res: Response) => {
 // POST /api/evolution/anna/create-instance
 router.post("/anna/create-instance", async (_req: Request, res: Response) => {
   try {
-    const resp = await fetch(`${EVOLUTION_URL}/instance/create`, {
-      method: "POST",
-      headers: evoHeaders(),
-      body: JSON.stringify({
-        instanceName: ANNA_INSTANCE,
-        integration: "WHATSAPP-BAILEYS",
-        qrcode: true,
-      }),
-    });
-    res.json(await resp.json());
+    const data = await whatsappService.createInstance(ANNA_INSTANCE);
+    res.json(data);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -112,8 +69,8 @@ router.post("/anna/create-instance", async (_req: Request, res: Response) => {
 // GET /api/evolution/anna/qrcode
 router.get("/anna/qrcode", async (_req: Request, res: Response) => {
   try {
-    const resp = await fetch(`${EVOLUTION_URL}/instance/connect/${ANNA_INSTANCE}`, { headers: evoHeaders() });
-    res.json(await resp.json());
+    const data = await whatsappService.getQRCode(ANNA_INSTANCE);
+    res.json(data);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -122,8 +79,8 @@ router.get("/anna/qrcode", async (_req: Request, res: Response) => {
 // GET /api/evolution/anna/status
 router.get("/anna/status", async (_req: Request, res: Response) => {
   try {
-    const resp = await fetch(`${EVOLUTION_URL}/instance/connectionState/${ANNA_INSTANCE}`, { headers: evoHeaders() });
-    res.json({ instance: ANNA_INSTANCE, ...(await resp.json()) });
+    const data = await whatsappService.getInstanceStatus(ANNA_INSTANCE);
+    res.json(data);
   } catch (error: any) {
     res.json({ instance: ANNA_INSTANCE, state: "offline", error: error.message });
   }
@@ -131,36 +88,12 @@ router.get("/anna/status", async (_req: Request, res: Response) => {
 
 // --- Webhook (receives messages from WhatsApp) ---
 
-async function logToSupabase(source: string, payload: any, result: any) {
-  try {
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!supabaseUrl || !supabaseKey) return;
-    await fetch(`${supabaseUrl}/rest/v1/webhook_logs`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: supabaseKey,
-        Authorization: `Bearer ${supabaseKey}`,
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({
-        source,
-        status: "ok",
-        payload,
-        result,
-        created_at: new Date().toISOString(),
-      }),
-    });
-  } catch { /* silent */ }
-}
-
 router.post("/webhook", async (req: Request, res: Response) => {
-  try {
-    const payload = req.body;
-    const event = payload.event;
-    const instanceName = payload.instance || "";
+  const payload = req.body;
+  const event = payload.event;
+  const instanceName = payload.instance || "";
 
+  try {
     // QR code / connection events — just acknowledge
     if (event === "qrcode.updated" || event === "connection.update") {
       console.log(`[Evolution/${instanceName}] ${event}: ${payload.data?.state || "updated"}`);
@@ -170,13 +103,20 @@ router.post("/webhook", async (req: Request, res: Response) => {
 
     // New message
     if (event === "messages.upsert") {
-      const msg = payload.data;
+      const data = payload.data;
+      // Handle payload variations (Evolution API v2 can wrap Baileys message)
+      const msg = data.messages ? data.messages[0] : data;
+      
       if (!msg || msg.key?.fromMe) {
         res.json({ status: "ok", action: "skipped" });
         return;
       }
 
-      const messageText = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
+      const messageText = msg.message?.conversation || 
+                          msg.message?.extendedTextMessage?.text || 
+                          msg.message?.imageMessage?.caption || 
+                          "";
+
       if (!messageText) {
         res.json({ status: "ok", action: "skipped", reason: "no_text" });
         return;
@@ -184,7 +124,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
 
       const remoteJid = msg.key?.remoteJid || "";
       const phone = remoteJid.replace("@s.whatsapp.net", "").replace("@g.us", "");
-      const pushName = msg.pushName || "";
+      const pushName = msg.pushName || "WhatsApp User";
 
       // Route by instance: anna-sales → Anna agent, pitoco-loco → Pitoco Loco
       const isAnna = instanceName === ANNA_INSTANCE;
@@ -192,37 +132,36 @@ router.post("/webhook", async (req: Request, res: Response) => {
       const agentBody = isAnna
         ? { message: messageText, external_client_id: phone, client_name: pushName, client_phone: phone, channel: "whatsapp_evolution" }
         : { message: messageText, history: [] };
-      const replyInstance = isAnna ? ANNA_INSTANCE : INSTANCE_NAME;
+      const replyInstance = isAnna ? ANNA_INSTANCE : (instanceName || INSTANCE_NAME);
 
       console.log(`[Evolution/${replyInstance}] ${pushName} (${phone}): ${messageText.substring(0, 50)}...`);
 
       const result = await callPython(agentEndpoint, "POST", agentBody);
-      const replyText = result.message || "Nao consegui processar.";
+      const replyText = result.message || ""; 
 
-      // Send reply back
-      try {
-        await fetch(`${EVOLUTION_URL}/message/sendText/${replyInstance}`, {
-          method: "POST",
-          headers: evoHeaders(),
-          body: JSON.stringify({ number: phone, text: replyText }),
-        });
-      } catch (sendErr: any) {
-        console.error(`[Evolution/${replyInstance}] Send failed: ${sendErr.message}`);
+      if (replyText) {
+        // Send reply back
+        try {
+          await whatsappService.sendTextMessage(replyInstance, phone, replyText);
+          console.log(`[Evolution/${replyInstance}] Reply sent to ${phone}`);
+        } catch (sendErr: any) {
+          console.error(`[Evolution/${replyInstance}] Send failed: ${sendErr.message}`);
+        }
       }
 
-      await logToSupabase(
+      await whatsappService.logWebhookToSupabase(
         isAnna ? "evolution_anna" : "evolution_pitoco",
-        { phone, pushName, message: messageText },
+        { phone, pushName, message: messageText, instance: instanceName },
         { reply: replyText.substring(0, 500), classification: result.classification }
       );
 
-      res.json({ status: "ok", instance: replyInstance, from: phone, reply_sent: true });
+      res.json({ status: "ok", instance: replyInstance, from: phone, reply_sent: !!replyText });
       return;
     }
 
     res.json({ status: "ok", event: event || "unknown" });
   } catch (error: any) {
-    console.error(`[Evolution] Webhook error: ${error.message}`);
+    console.error(`[Evolution] Webhook error for instance ${instanceName}: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });

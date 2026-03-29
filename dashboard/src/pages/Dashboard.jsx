@@ -9,10 +9,9 @@ const AGENTS = [
   { id: 'insights', name: 'Insights', role: 'Análise & Padrões', model: 'GPT-4o', color: '#3b82f6', angle: 288 },
 ]
 
-/* ========== Neural Brain SVG ========== */
-function NeuralBrain({ agents, agentStatus }) {
+/* ========== Central Node Network SVG ========== */
+function CentralNetwork({ agents, agentStatus }) {
   const cx = 200, cy = 200, r = 120
-  // Neural nodes inside the brain
   const nodes = [
     { x: 200, y: 160, delay: 0 },
     { x: 170, y: 190, delay: 0.3 },
@@ -28,8 +27,6 @@ function NeuralBrain({ agents, agentStatus }) {
     { x: 150, y: 200, delay: 0.2 },
     { x: 250, y: 200, delay: 0.8 },
   ]
-
-  // Neural connections between nodes
   const connections = [
     [0, 1], [0, 2], [1, 3], [2, 4], [3, 5], [4, 5],
     [5, 0], [6, 1], [7, 2], [8, 3], [8, 4], [9, 0],
@@ -38,22 +35,22 @@ function NeuralBrain({ agents, agentStatus }) {
   ]
 
   return (
-    <svg viewBox="0 0 400 400" className="w-full h-full">
+    <svg viewBox="0 0 400 400" className="w-full h-full drop-shadow-md">
       <defs>
         <radialGradient id="brain-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="rgba(0,255,255,0.12)" />
-          <stop offset="70%" stopColor="rgba(0,255,255,0.03)" />
+          <stop offset="0%" stopColor="rgba(99,102,241,0.06)" />
+          <stop offset="70%" stopColor="rgba(99,102,241,0.01)" />
           <stop offset="100%" stopColor="transparent" />
         </radialGradient>
         <filter id="glow">
-          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feGaussianBlur stdDeviation="2" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
         <filter id="glow-strong">
-          <feGaussianBlur stdDeviation="6" result="blur" />
+          <feGaussianBlur stdDeviation="4" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
@@ -64,18 +61,17 @@ function NeuralBrain({ agents, agentStatus }) {
       {/* Background glow */}
       <circle cx={cx} cy={cy} r="180" fill="url(#brain-glow)" />
 
-      {/* Outer scanning ring */}
-      <g className="animate-scan-sweep" style={{ transformOrigin: `${cx}px ${cy}px` }}>
-        <circle cx={cx} cy={cy} r={r + 50} fill="none" stroke="rgba(0,255,255,0.06)" strokeWidth="1" strokeDasharray="8 12" />
-        <line x1={cx} y1={cy - r - 50} x2={cx} y2={cy - r - 35} stroke="rgba(0,255,255,0.4)" strokeWidth="2" />
+      {/* Outer elegant ring */}
+      <g className="animate-spin-slow" style={{ transformOrigin: `${cx}px ${cy}px`, animationDuration: '40s' }}>
+        <circle cx={cx} cy={cy} r={r + 50} fill="none" stroke="rgba(148,163,184,0.3)" strokeWidth="1" strokeDasharray="4 16" />
       </g>
 
       {/* Pulse rings */}
-      <circle cx={cx} cy={cy} r={r + 30} fill="none" stroke="rgba(0,255,255,0.08)" strokeWidth="0.5" className="animate-pulse-ring" />
-      <circle cx={cx} cy={cy} r={r + 15} fill="none" stroke="rgba(0,255,255,0.12)" strokeWidth="0.5" className="animate-pulse-ring-reverse" />
+      <circle cx={cx} cy={cy} r={r + 30} fill="none" stroke="rgba(99,102,241,0.2)" strokeWidth="0.5" className="animate-ping" style={{animationDuration: '4s'}} />
+      <circle cx={cx} cy={cy} r={r + 15} fill="none" stroke="rgba(99,102,241,0.3)" strokeWidth="0.5" />
 
       {/* Brain outline */}
-      <circle cx={cx} cy={cy} r={r} fill="rgba(0,255,255,0.02)" stroke="rgba(0,255,255,0.15)" strokeWidth="1" filter="url(#glow)" />
+      <circle cx={cx} cy={cy} r={r} fill="rgba(255,255,255,0.6)" stroke="rgba(99,102,241,0.3)" strokeWidth="1" />
 
       {/* Neural connections */}
       {connections.map(([a, b], i) => (
@@ -83,21 +79,21 @@ function NeuralBrain({ agents, agentStatus }) {
           key={`conn-${i}`}
           x1={nodes[a].x} y1={nodes[a].y}
           x2={nodes[b].x} y2={nodes[b].y}
-          stroke="rgba(0,255,255,0.12)"
-          strokeWidth="0.8"
+          stroke="rgba(99,102,241,0.25)"
+          strokeWidth="1"
         />
       ))}
 
-      {/* Animated data flow on connections */}
+      {/* Animated data flow */}
       {connections.map(([a, b], i) => (
         <line
           key={`flow-${i}`}
           x1={nodes[a].x} y1={nodes[a].y}
           x2={nodes[b].x} y2={nodes[b].y}
-          stroke="rgba(0,255,255,0.5)"
+          stroke="rgba(99,102,241,0.7)"
           strokeWidth="1.5"
           strokeDasharray="3 17"
-          className="animate-neural-signal"
+          className="animate-pulse"
           style={{ animationDelay: `${i * 0.15}s`, animationDuration: `${2 + (i % 3)}s` }}
         />
       ))}
@@ -106,28 +102,20 @@ function NeuralBrain({ agents, agentStatus }) {
       {nodes.map((n, i) => (
         <g key={`node-${i}`}>
           <circle
-            cx={n.x} cy={n.y} r="6"
-            fill="rgba(0,255,255,0.08)"
-            stroke="rgba(0,255,255,0.4)"
-            strokeWidth="0.8"
-            className="animate-node-pulse"
-            style={{ animationDelay: `${n.delay}s` }}
-            filter="url(#glow)"
+            cx={n.x} cy={n.y} r="4"
+            fill="#ffffff"
+            stroke="rgba(99,102,241,0.6)"
+            strokeWidth="1"
           />
-          <circle
-            cx={n.x} cy={n.y} r="2"
-            fill="rgba(0,255,255,0.9)"
-            className="animate-node-pulse"
-            style={{ animationDelay: `${n.delay}s` }}
-          />
+          <circle cx={n.x} cy={n.y} r="1.5" fill="#a855f7" />
         </g>
       ))}
 
       {/* Center core */}
-      <circle cx={cx} cy={cy} r="8" fill="rgba(0,255,255,0.15)" stroke="rgba(0,255,255,0.6)" strokeWidth="1.5" filter="url(#glow-strong)" className="animate-glow-breathe" style={{ color: '#00ffff' }} />
-      <circle cx={cx} cy={cy} r="3" fill="#00ffff" className="animate-node-pulse" />
+      <circle cx={cx} cy={cy} r="12" fill="#ffffff" stroke="rgba(99,102,241,0.6)" strokeWidth="2" filter="url(#glow-strong)" className="animate-pulse" />
+      <circle cx={cx} cy={cy} r="4" fill="#6366f1" />
 
-      {/* Agent nodes orbiting */}
+      {/* Agents orbiting */}
       {agents.map((agent, i) => {
         const angle = (agent.angle * Math.PI) / 180
         const orbitR = r + 45
@@ -137,106 +125,41 @@ function NeuralBrain({ agents, agentStatus }) {
 
         return (
           <g key={agent.id}>
-            {/* Connection line to center */}
-            <line
-              x1={cx} y1={cy} x2={ax} y2={ay}
-              stroke={`${agent.color}30`}
-              strokeWidth="0.8"
-              strokeDasharray="4 4"
-            />
-            <line
-              x1={cx} y1={cy} x2={ax} y2={ay}
-              stroke={`${agent.color}80`}
-              strokeWidth="1"
-              strokeDasharray="2 18"
-              className="animate-neural-signal"
-              style={{ animationDelay: `${i * 0.5}s` }}
-            />
-            {/* Agent node */}
-            <circle
-              cx={ax} cy={ay} r="18"
-              fill={`${agent.color}15`}
-              stroke={isOnline ? `${agent.color}90` : `${agent.color}30`}
-              strokeWidth="1.5"
-              filter="url(#glow)"
-            />
-            <circle
-              cx={ax} cy={ay} r="10"
-              fill={`${agent.color}30`}
-              stroke={`${agent.color}60`}
-              strokeWidth="0.5"
-            />
-            <text
-              x={ax} y={ay + 1}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="white"
-              fontSize="7"
-              fontWeight="bold"
-              fontFamily="monospace"
-            >
-              {agent.name[0]}
-            </text>
-            {/* Status dot */}
-            <circle
-              cx={ax + 12} cy={ay - 12} r="3"
-              fill={isOnline ? '#22c55e' : '#ef4444'}
-              className={isOnline ? 'animate-node-pulse' : ''}
-              style={{ animationDelay: `${i * 0.3}s` }}
-            />
-            {/* Agent label */}
-            <text
-              x={ax} y={ay + 28}
-              textAnchor="middle"
-              fill={`${agent.color}`}
-              fontSize="7"
-              fontWeight="600"
-              fontFamily="monospace"
-              opacity="0.8"
-            >
-              {agent.name}
-            </text>
+            <line x1={cx} y1={cy} x2={ax} y2={ay} stroke={`${agent.color}40`} strokeWidth="1" strokeDasharray="3 3" />
+            <circle cx={ax} cy={ay} r="20" fill="#ffffff" stroke={isOnline ? `${agent.color}80` : `${agent.color}30`} strokeWidth="1.5" filter="url(#glow)" />
+            <text x={ax} y={ay + 1} textAnchor="middle" dominantBaseline="middle" fill="#334155" fontSize="8" fontWeight="600" className="select-none">{agent.name[0]}</text>
+            <circle cx={ax + 14} cy={ay - 14} r="3" fill={isOnline ? '#10b981' : '#f43f5e'} />
+            <text x={ax} y={ay + 34} textAnchor="middle" fill="#475569" fontSize="8" fontWeight="600" className="select-none">{agent.name}</text>
           </g>
         )
       })}
-
-      {/* Center label */}
-      <text x={cx} y={cy + r + 80} textAnchor="middle" fill="rgba(0,255,255,0.5)" fontSize="8" fontFamily="monospace" letterSpacing="3" className="animate-hud-flicker">
-        NEURAL CORE ACTIVE
-      </text>
     </svg>
   )
 }
 
 /* ========== HUD KPI Card ========== */
-function HudKPI({ label, value, sub, color = '#00ffff', delay = 0 }) {
+function HudKPI({ label, value, sub }) {
   return (
-    <div
-      className="glass-card rounded-lg p-4 animate-fade-in-up"
-      style={{ animationDelay: `${delay}ms`, borderLeft: `2px solid ${color}40` }}
-    >
-      <p className="text-[10px] uppercase tracking-widest font-mono" style={{ color: `${color}80` }}>{label}</p>
-      <div className="flex items-end gap-2 mt-1">
-        <span className="text-2xl font-bold font-mono animate-hud-flicker" style={{ color }}>{value}</span>
+    <div className="glass-card rounded-xl p-5 hover:-translate-y-0.5 transition-transform duration-200">
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">{label}</p>
+      <div className="flex flex-col">
+        <span className="text-3xl font-bold text-slate-800">{value}</span>
+        {sub && <span className="text-[11px] font-medium text-slate-400 mt-1">{sub}</span>}
       </div>
-      {sub && <p className="text-[10px] text-gray-500 font-mono mt-1">{sub}</p>}
     </div>
   )
 }
 
 /* ========== System Status Bar ========== */
-function SystemBar({ label, value, max, color = '#00ffff' }) {
+function SystemBar({ label, value, max, color = '#6366f1' }) {
   const pct = max ? Math.round((value / max) * 100) : 0
   return (
     <div className="flex items-center gap-3">
-      <span className="text-[10px] text-gray-500 font-mono w-20 uppercase tracking-wider">{label}</span>
-      <div className="flex-1 h-1.5 bg-gray-800/50 rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-1000"
-          style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}40, ${color})` }}
-        />
+      <span className="text-xs font-semibold text-slate-500 w-24 uppercase">{label}</span>
+      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+        <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
-      <span className="text-[10px] font-mono" style={{ color }}>{pct}%</span>
+      <span className="text-xs font-bold text-slate-700 w-8 text-right">{pct}%</span>
     </div>
   )
 }
@@ -245,25 +168,22 @@ function SystemBar({ label, value, max, color = '#00ffff' }) {
 function AgentRow({ agent, status }) {
   const isOnline = status === 'online'
   return (
-    <div className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-white/[0.02] transition group">
-      <div
-        className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold font-mono text-white"
-        style={{ background: `${agent.color}25`, border: `1px solid ${agent.color}40` }}
-      >
+    <div className="flex items-center gap-3 py-3 px-3 rounded-lg hover:bg-slate-50 transition group border border-transparent hover:border-slate-100">
+      <div className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold shadow-sm" style={{ backgroundColor: `${agent.color}15`, color: agent.color, border: `1px solid ${agent.color}30` }}>
         {agent.name[0]}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium font-mono">{agent.name}</span>
-          <span className="text-[9px] px-1.5 py-0.5 rounded font-mono" style={{ background: `${agent.color}15`, color: agent.color }}>
+          <span className="text-sm font-bold text-slate-800">{agent.name}</span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold" style={{ backgroundColor: `${agent.color}10`, color: agent.color }}>
             {agent.model}
           </span>
         </div>
-        <p className="text-[10px] text-gray-500 font-mono">{agent.role}</p>
+        <p className="text-[11px] font-medium text-slate-500 mt-0.5">{agent.role}</p>
       </div>
-      <div className="flex items-center gap-2">
-        <div className={`w-2 h-2 rounded-full ${isOnline ? 'animate-pulse' : ''}`} style={{ background: isOnline ? '#22c55e' : '#ef4444' }} />
-        <span className="text-[10px] font-mono uppercase" style={{ color: isOnline ? '#22c55e' : '#ef4444' }}>{status}</span>
+      <div className="flex items-center gap-1.5">
+        <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+        <span className="text-[10px] uppercase font-bold" style={{ color: isOnline ? '#10b981' : '#f43f5e' }}>{status}</span>
       </div>
     </div>
   )
@@ -282,41 +202,37 @@ function ActivityLog() {
         .finally(() => setLoading(false))
     }
     fetchActivities()
-    const interval = setInterval(fetchActivities, 30000) // refresh every 30s
+    const interval = setInterval(fetchActivities, 30000)
     return () => clearInterval(interval)
   }, [])
 
   if (loading) {
     return (
       <div className="flex items-center gap-2 py-4 justify-center">
-        <span className="w-3 h-3 border border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
-        <span className="text-[10px] font-mono text-gray-600">Carregando atividades...</span>
+        <span className="w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+        <span className="text-xs font-medium text-slate-500">Carregando atividades...</span>
       </div>
     )
   }
 
   if (activities.length === 0) {
     return (
-      <div className="py-6 text-center">
-        <p className="text-[10px] font-mono text-gray-600">Nenhuma atividade registrada ainda</p>
-        <p className="text-[9px] font-mono text-gray-700 mt-1">Atividades aparecem quando os agentes processam mensagens</p>
+      <div className="py-8 text-center">
+        <p className="text-sm text-slate-500 font-semibold">Nenhuma atividade registrada</p>
+        <p className="text-xs text-slate-400 mt-1">As ações dos agentes aparecerão aqui.</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1 mt-3">
       {activities.map((log, i) => (
-        <div
-          key={log.id || i}
-          className="flex items-start gap-3 py-2 px-3 rounded-lg hover:bg-white/[0.02] transition animate-log-in"
-          style={{ animationDelay: `${i * 100}ms` }}
-        >
-          <span className="text-[10px] text-gray-600 font-mono w-10 mt-0.5">{log.time}</span>
-          <span className="text-[10px] font-bold font-mono w-14 capitalize" style={{ color: log.color }}>{log.agent}</span>
-          <span className="text-xs text-gray-400 font-mono flex-1">{log.msg}</span>
+        <div key={log.id || i} className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-slate-50 transition text-sm">
+          <span className="text-[11px] font-mono text-slate-400 w-12">{log.time}</span>
+          <span className="text-[11px] uppercase font-bold w-16" style={{ color: log.color }}>{log.agent}</span>
+          <span className="text-slate-700 font-medium flex-1 truncate">{log.msg}</span>
           {log.type === 'error' && (
-            <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 shrink-0">ERR</span>
+            <span className="text-[9px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 font-bold shrink-0">ERRO</span>
           )}
         </div>
       ))}
@@ -324,7 +240,6 @@ function ActivityLog() {
   )
 }
 
-/* ========== Main Dashboard ========== */
 export default function Dashboard() {
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -347,110 +262,100 @@ export default function Dashboard() {
   const collections = rag.collections || []
   const studyTotal = rag.study_total || 0
   const opsTotal = rag.operational_total || 0
-  const agentStatus = {
-    ana: agentData.ana || 'offline',
-    sofia: agentData.sofia || 'offline',
-    sophia: 'online',
-    simone: 'online',
-    insights: agentData.insights || 'offline',
-  }
-
+  const agentStatus = { ana: agentData.ana || 'offline', sofia: agentData.sofia || 'offline', sophia: 'online', simone: 'online', insights: agentData.insights || 'offline' }
   const totalOnline = Object.values(agentStatus).filter(v => v === 'online').length
 
   return (
-    <div className="min-h-screen neural-grid p-6 max-w-[1600px] mx-auto">
-      {/* Top HUD Bar */}
-      <div className="flex items-center justify-between mb-6 animate-fade-in-up">
+    <div className="min-h-screen relative p-6 max-w-[1600px] mx-auto pt-8 neural-grid text-slate-800">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-lg font-bold font-mono tracking-wider" style={{ color: '#00ffff' }}>
-            DOCTOR AUTO AI
-          </h1>
-          <p className="text-[10px] text-gray-500 font-mono uppercase tracking-[0.3em]">Neural Command Center v2.0</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">System Overview</h1>
+          <p className="text-sm font-medium text-slate-500 mt-1">Monitor real-time agent activities and RAG collections</p>
         </div>
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-[10px] text-gray-400 font-mono uppercase">System Online</span>
+        <div className="flex items-center gap-6 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-2 border-r border-slate-200 pr-6">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">Live</span>
           </div>
-          <div className="text-right">
-            <p className="text-sm font-mono" style={{ color: '#00ffff80' }}>
-              {time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          <div>
+            <p className="text-sm font-bold text-slate-800">
+              {time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
             </p>
-            <p className="text-[10px] text-gray-600 font-mono">
-              {time.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+              {time.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
             </p>
           </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-          <div className="w-16 h-16 border border-cyan-500/30 rounded-full animate-spin" style={{ borderTopColor: '#00ffff' }} />
-          <p className="text-sm font-mono animate-hud-flicker" style={{ color: '#00ffff60' }}>Inicializando neural core...</p>
+        <div className="flex flex-col items-center justify-center h-[50vh] gap-4">
+          <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="grid grid-cols-12 gap-5">
-          {/* Left Panel — KPIs */}
-          <div className="col-span-12 lg:col-span-3 space-y-4">
-            <HudKPI label="Agentes Online" value={`${totalOnline}/${AGENTS.length}`} sub="neural nodes active" color="#22c55e" delay={0} />
-            <HudKPI label="RAG Estudo" value={studyTotal} sub="documentos indexados" color="#f59e0b" delay={100} />
-            <HudKPI label="RAG Operacional" value={opsTotal} sub="documentos indexados" color="#a855f7" delay={200} />
-            <HudKPI label="Collections" value={collections.length} sub="ChromaDB clusters" color="#06b6d4" delay={300} />
+        <div className="grid grid-cols-12 gap-6">
+          {/* Left Column KPIs */}
+          <div className="col-span-12 lg:col-span-3 flex flex-col gap-6 animate-fade-in-up">
+            <HudKPI label="Agents Online" value={`${totalOnline}/${AGENTS.length}`} sub="Active intelligence nodes" />
+            <HudKPI label="Study RAG" value={studyTotal} sub="Indexed resources" />
+            <HudKPI label="Ops RAG" value={opsTotal} sub="Operational rules" />
+            <HudKPI label="Collections" value={collections.length} sub="ChromaDB clusters" />
 
-            {/* System bars */}
-            <div className="glass-card rounded-lg p-4 space-y-3 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-              <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest mb-2">System Resources</p>
-              <SystemBar label="Neural" value={totalOnline} max={AGENTS.length} color="#00ffff" />
-              <SystemBar label="RAG" value={studyTotal + opsTotal} max={Math.max(studyTotal + opsTotal, 100)} color="#a855f7" />
-              <SystemBar label="Memory" value={collections.length} max={10} color="#f59e0b" />
+            <div className="glass-card rounded-xl p-5 mt-2">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Resources</p>
+              <div className="space-y-4">
+                <SystemBar label="Compute" value={totalOnline} max={AGENTS.length} color="#6366f1" />
+                <SystemBar label="Memory" value={studyTotal + opsTotal} max={Math.max(studyTotal + opsTotal, 100)} color="#a855f7" />
+                <SystemBar label="Storage" value={collections.length} max={10} color="#10b981" />
+              </div>
             </div>
           </div>
 
-          {/* Center — Neural Brain */}
-          <div className="col-span-12 lg:col-span-6 flex items-center justify-center">
-            <div className="w-full max-w-lg animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-              <NeuralBrain agents={AGENTS} agentStatus={agentStatus} />
+          {/* Center Visualization */}
+          <div className="col-span-12 lg:col-span-6 flex items-center justify-center py-10 lg:py-0">
+            <div className="w-full max-w-md animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+              <CentralNetwork agents={AGENTS} agentStatus={agentStatus} />
             </div>
           </div>
 
-          {/* Right Panel — Agents */}
-          <div className="col-span-12 lg:col-span-3 space-y-4">
-            <div className="glass-card rounded-lg p-4 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-              <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest mb-3">Neural Agents</p>
-              <div className="space-y-1">
-                {AGENTS.map(agent => (
-                  <AgentRow key={agent.id} agent={agent} status={agentStatus[agent.id]} />
-                ))}
+          {/* Right Column Agents */}
+          <div className="col-span-12 lg:col-span-3 flex flex-col gap-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+            <div className="glass-card rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Agents</p>
+                <div className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 font-bold">Active</div>
+              </div>
+              <div className="space-y-2">
+                {AGENTS.map(agent => <AgentRow key={agent.id} agent={agent} status={agentStatus[agent.id]} />)}
               </div>
             </div>
 
-            {/* Collections mini */}
-            <div className="glass-card rounded-lg p-4 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-              <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest mb-3">RAG Collections</p>
-              <div className="space-y-2">
+            <div className="glass-card rounded-xl p-5 mt-2">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">RAG Namespaces</p>
+              <div className="space-y-3">
                 {collections.length > 0 ? collections.map(c => (
-                  <div key={c.name} className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-gray-400 truncate">{c.name}</span>
+                  <div key={c.name} className="flex items-center justify-between group cursor-default">
+                    <span className="text-xs font-semibold text-slate-600 group-hover:text-indigo-600 transition truncate pr-4">{c.name}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono" style={{ color: c.rag === 'study' ? '#f59e0b' : '#a855f7' }}>{c.count}</span>
-                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                      <span className="text-[10px] font-bold text-slate-400">{c.count}</span>
+                      <div className={`w-1.5 h-1.5 rounded-full ${c.rag === 'study' ? 'bg-indigo-500' : 'bg-emerald-500'}`} />
                     </div>
                   </div>
                 )) : (
-                  <p className="text-[10px] text-gray-600 font-mono">Aguardando seed...</p>
+                  <p className="text-[11px] text-slate-400 italic font-medium">No namespaces found.</p>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Bottom — Activity Log */}
-          <div className="col-span-12 glass-card rounded-lg p-4 animate-fade-in-up" style={{ animationDelay: '500ms' }}>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">Activity Stream</p>
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
-                <span className="text-[10px] text-gray-600 font-mono">LIVE</span>
-              </div>
+          {/* Bottom Feed */}
+          <div className="col-span-12 glass-card rounded-xl p-5 mb-8 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-2">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Activity Feed</p>
             </div>
             <ActivityLog />
           </div>

@@ -13,6 +13,7 @@ import thalesRoutes from "./routes/thales.routes.js";
 import evolutionRoutes from "./routes/evolution.routes.js";
 import obsidianRoutes from "./routes/obsidian.routes.js";
 import kommoSyncRoutes from "./routes/kommo-sync.routes.js";
+import kimiRoutes from "./routes/kimi.routes.js";
 
 const app = express();
 const PORT = parseInt(process.env.GATEWAY_PORT || "3001");
@@ -101,6 +102,7 @@ app.use("/api/thales", thalesRoutes);
 app.use("/api/evolution", evolutionRoutes);
 app.use("/api/obsidian", obsidianRoutes);
 app.use("/api/kommo-sync", kommoSyncRoutes);
+app.use("/api/kimi", kimiRoutes);
 
 // Start
 app.listen(PORT, () => {

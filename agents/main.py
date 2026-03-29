@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config.settings import settings
 from rag.chroma_client import ChromaManager
 from services.scheduler import init_scheduler
-from api.routes import chat, orchestrate, insights, ingest, rag, health, thales as thales_route, kommo_sync
+from api.routes import chat, orchestrate, insights, ingest, rag, health, thales as thales_route, kommo_sync, kimi as kimi_route
 
 
 @asynccontextmanager
@@ -25,6 +25,13 @@ async def lifespan(app: FastAPI):
     thales_route.init_thales(thales)
     app.state.thales = thales
     print("Thales (Second Brain) initialized")
+
+    # Initialize Kimi (CRM Manager)
+    from agents.kimi import KimiAgent
+    kimi = KimiAgent()
+    kimi_route.init_kimi(kimi)
+    app.state.kimi = kimi
+    print("Kimi (CRM Manager) initialized")
 
     # Start scheduled jobs
     init_scheduler(chroma)
@@ -60,3 +67,4 @@ app.include_router(ingest.router, prefix="/rag", tags=["Ingestion"])
 app.include_router(rag.router, prefix="/rag", tags=["RAG"])
 app.include_router(thales_route.router, tags=["Thales"])
 app.include_router(kommo_sync.router, tags=["Kommo"])
+app.include_router(kimi_route.router, tags=["Kimi"])

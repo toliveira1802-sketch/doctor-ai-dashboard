@@ -49,6 +49,13 @@ export const getLeads = (limit = 50) => request(`/dashboard/leads?limit=${limit}
 export const getLeadDetails = (id) => request(`/dashboard/leads/${id}`);
 export const getLeadStats = () => request('/dashboard/lead-stats');
 
+// Kimi — CRM Manager
+export const kimiSync = () => request('/kimi/sync', 'POST');
+export const kimiQueue = (limit = 30) => request(`/kimi/queue?limit=${limit}`);
+export const kimiEnrich = (leadId) => request(`/kimi/enrich/${leadId}`, 'POST');
+export const kimiBriefing = () => request('/kimi/briefing');
+export const kimiHealth = () => request('/kimi/health');
+
 // Logs / Webhooks
 export const getWebhookLogs = (limit = 50) => request(`/dashboard/logs?limit=${limit}`);
 export const getSystemHealth = () => request('/health');
