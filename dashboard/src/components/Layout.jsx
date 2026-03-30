@@ -3,31 +3,12 @@ import { useState } from 'react'
 
 const sections = [
   {
-    title: 'Core',
+    title: 'Management',
     links: [
-      { to: '/', label: 'Dashboard', icon: '◈' },
-      { to: '/leads', label: 'CRM Leads', icon: '≡' },
-      { to: '/whatsapp', label: 'WhatsApp', icon: '💬' },
-      { to: '/logs', label: 'Logs', icon: '⌘' },
-    ],
-  },
-  {
-    title: 'Intelligence',
-    links: [
-      { to: '/ia-agents', label: 'IA Agents', icon: '✧' },
-      { to: '/hub', label: 'Sophia Hub', icon: '◎' },
-      { to: '/rag', label: 'RAG Explorer', icon: '◂' },
-      { to: '/blog', label: 'Blog Gen', icon: '▤' },
-      { to: '/ingestion', label: 'Ingestion', icon: '⇡' },
-      { to: '/brain', label: 'Second Brain', icon: '⌥' },
-    ],
-  },
-  {
-    title: 'Automation',
-    links: [
-      { to: '/agents', label: 'Agents', icon: '⚡' },
-      { to: '/agent-builder', label: 'Builder', icon: '⌗' },
-      { to: '/skill-builder', label: 'Skills', icon: '⎋' },
+      { to: '/', label: 'Overview', icon: '◈' },
+      { to: '/ai-lab', label: 'AI Lab', icon: '✧' },
+      { to: '/brain', label: 'Digital Brain', icon: '⌥' },
+      { to: '/comm', label: 'Communications', icon: '💬' },
     ],
   },
 ]

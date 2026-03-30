@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { sofiaStatus, getActivityStream } from '../lib/api'
+import { sofiaStatus, getActivityStream, getWebhookLogs, getSystemHealth } from '../lib/api'
+import Logs from './Logs'
 
 const AGENTS = [
   { id: 'ana', name: 'Ana', role: 'Atendimento & Leads', model: 'GPT-4o-mini', color: '#ec4899', angle: 0 },
@@ -241,6 +242,7 @@ function ActivityLog() {
 }
 
 export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState('overview')
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
   const [time, setTime] = useState(new Date())
@@ -269,9 +271,38 @@ export default function Dashboard() {
     <div className="min-h-screen relative p-6 max-w-[1600px] mx-auto pt-8 neural-grid text-slate-800">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">System Overview</h1>
-          <p className="text-sm font-medium text-slate-500 mt-1">Monitor real-time agent activities and RAG collections</p>
+        <div className="flex flex-col gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">System {activeTab === 'overview' ? 'Overview' : 'Logs'}</h1>
+            <p className="text-sm font-medium text-slate-500 mt-1">
+              {activeTab === 'overview' 
+                ? 'Monitor real-time agent activities and RAG collections' 
+                : 'Webhooks, Health Checks & Event Stream'}
+            </p>
+          </div>
+          
+          <div className="flex gap-1 p-1 bg-white/50 backdrop-blur-sm rounded-xl border border-slate-200 w-fit">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                activeTab === 'overview'
+                  ? 'bg-white shadow-sm text-indigo-600 border border-slate-200'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveTab('logs')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                activeTab === 'logs'
+                  ? 'bg-white shadow-sm text-indigo-600 border border-slate-200'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              System Logs
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-6 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-2 border-r border-slate-200 pr-6">
@@ -296,8 +327,9 @@ export default function Dashboard() {
         <div className="flex flex-col items-center justify-center h-[50vh] gap-4">
           <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
         </div>
-      ) : (
+      ) : activeTab === 'overview' ? (
         <div className="grid grid-cols-12 gap-6">
+          {/* ... (rest of overview grid) ... */}
           {/* Left Column KPIs */}
           <div className="col-span-12 lg:col-span-3 flex flex-col gap-6 animate-fade-in-up">
             <HudKPI label="Agents Online" value={`${totalOnline}/${AGENTS.length}`} sub="Active intelligence nodes" />
@@ -356,9 +388,19 @@ export default function Dashboard() {
           <div className="col-span-12 glass-card rounded-xl p-5 mb-8 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-2">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Activity Feed</p>
+              <button 
+                onClick={() => setActiveTab('logs')}
+                className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 transition"
+              >
+                View Full Logs →
+              </button>
             </div>
             <ActivityLog />
           </div>
+        </div>
+      ) : (
+        <div className="animate-fade-in">
+          <Logs />
         </div>
       )}
     </div>
