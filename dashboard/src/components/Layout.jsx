@@ -16,6 +16,12 @@ const sections = [
     ],
   },
   {
+    title: 'Operações',
+    links: [
+      { to: '/inventario', label: 'Inventário', icon: 'IV', color: 'emerald' },
+    ],
+  },
+  {
     title: 'Automação',
     links: [
       { to: '/agents', label: 'Agents', icon: 'AG', color: 'blue' },
@@ -32,6 +38,7 @@ const colorMap = {
   blue: 'bg-blue-500',
   cyan: 'bg-cyan-500',
   pink: 'bg-pink-500',
+  emerald: 'bg-emerald-500',
 }
 
 export default function Layout() {
