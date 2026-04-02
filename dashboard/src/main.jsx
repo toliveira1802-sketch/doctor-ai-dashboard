@@ -9,7 +9,6 @@ import Agents from './pages/Agents'
 import AgentBuilder from './pages/AgentBuilder'
 import SkillBuilder from './pages/SkillBuilder'
 import SophiaHub from './pages/SophiaHub'
-import Inventario from './pages/Inventario'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -22,7 +21,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/agents" element={<Agents />} />
           <Route path="/agent-builder" element={<AgentBuilder />} />
           <Route path="/skill-builder" element={<SkillBuilder />} />
-          <Route path="/inventario" element={<Inventario />} />
         </Route>
       </Routes>
     </BrowserRouter>

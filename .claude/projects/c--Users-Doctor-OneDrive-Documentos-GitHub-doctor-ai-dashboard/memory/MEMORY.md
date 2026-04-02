@@ -1,0 +1,5 @@
+- [User profile](user_profile.md) — Doctor Auto Prime owner, Portuguese-speaking, AI dashboard project
+- [Project status](project_status.md) — VPS deployed, 7 phases complete, next steps
+- [Infrastructure](infra_vps.md) — Hostinger VPS KVM 8, Docker Compose, Caddy, deploy details
+- [Architecture decisions](architecture_decisions.md) — No LangChain, direct SDKs, ChromaDB, Caddy HTTP
+- [External tools](external_tools.md) — Miro board, Notion pages, Supabase, OpenClaw

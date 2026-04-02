@@ -30,8 +30,26 @@ def init_scheduler(chroma):
         replace_existing=True,
     )
 
+    # Thales: sync Obsidian vault every 30 minutes
+    scheduler.add_job(
+        job_thales_sync,
+        IntervalTrigger(minutes=30),
+        id="thales_vault_sync",
+        name="Thales: sync Obsidian vault to RAG",
+        replace_existing=True,
+    )
+
+    # Kommo: full scrape and sync daily at 06:00
+    scheduler.add_job(
+        job_kommo_sync,
+        IntervalTrigger(hours=24),
+        id="kommo_daily_sync",
+        name="Kommo: scrape and sync all leads",
+        replace_existing=True,
+    )
+
     scheduler.start()
-    print("Scheduler started with 2 jobs")
+    print("Scheduler started with 4 jobs")
 
 
 async def job_review_study_rag():
@@ -74,3 +92,41 @@ async def job_research_news():
             print(f"[Scheduler] News research: {result.get('chunk_count', 0)} chunks from '{query[:50]}'")
         except Exception as e:
             print(f"[Scheduler] News research failed: {e}")
+
+
+async def job_thales_sync():
+    """Thales: incremental sync of Obsidian vault to RAG."""
+    if not _chroma:
+        return
+
+    from rag.retriever import RAGRetriever
+    from agents.thales import ThalesAgent
+
+    retriever = RAGRetriever(_chroma)
+    thales = ThalesAgent(chroma=_chroma, retriever=retriever)
+
+    try:
+        result = await thales.sync(force=False)
+        synced = result.get("synced", 0)
+        if synced > 0:
+            print(f"[Scheduler] Thales vault sync: {synced} files synced")
+    except Exception as e:
+        print(f"[Scheduler] Thales vault sync failed: {e}")
+
+
+async def job_kommo_sync():
+    """Kimi: daily full scrape, enrich, and sync of all leads."""
+    try:
+        from agents.kimi import KimiAgent
+
+        kimi = KimiAgent()
+        result = await kimi.sync_leads()
+
+        total = result.get("total_scraped", 0)
+        saved = result.get("saved", 0)
+        enriched = result.get("enriched", 0)
+        vacuum = result.get("action_needed", {}).get("vacuum_leads", 0)
+        stale = result.get("action_needed", {}).get("stale_leads", 0)
+        print(f"[Scheduler] Kimi sync: {total} leads scraped, {saved} saved, {enriched} enriched, {vacuum} vacuum, {stale} stale")
+    except Exception as e:
+        print(f"[Scheduler] Kimi sync failed: {e}")

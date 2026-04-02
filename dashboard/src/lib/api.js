@@ -27,20 +27,86 @@ export const getConversation = (id) => request(`/chat/conversations/${id}`);
 export const analyzeVehicle = (brand, model, year) =>
   request('/insights/analyze', 'POST', { action: 'analyze_vehicle', brand, model, year });
 export const detectPatterns = () => request('/insights/analyze', 'POST', { action: 'detect_patterns' });
+
+// Blog
 export const generateBlog = (topic, style = 'informativo') =>
-  request('/insights/analyze', 'POST', { topic, style });
+  request('/insights/blog/generate', 'POST', { topic, style });
+export const generateBlogAuto = () =>
+  request('/insights/blog/auto', 'POST', {});
 
 // RAG
 export const getCollections = () => request('/sofia/command', 'POST', { action: 'status' });
 export const searchRAG = (query, collections = null) =>
-  request('/sofia/command', 'POST', { action: 'search_study', payload: { query } });
-
-// Ingest
-export const ingestPerplexity = (query, collection = 'study_industry_news') =>
-  request('/sofia/command', 'POST', {
-    action: 'chat',
-    message: `Pesquise via Perplexity: ${query}`,
-  });
+  request('/rag/query', 'POST', { query, collections, n_results: 10 });
+export const getRagCollections = () => request('/rag/collections');
 
 // Dashboard metrics
 export const getDashboardMetrics = () => request('/dashboard/metrics');
+export const getActivityStream = (limit = 20) => request(`/dashboard/activity?limit=${limit}`);
+
+// Leads / CRM
+export const getLeads = (limit = 50) => request(`/dashboard/leads?limit=${limit}`);
+export const getLeadDetails = (id) => request(`/dashboard/leads/${id}`);
+export const getLeadStats = () => request('/dashboard/lead-stats');
+
+// Kimi — CRM Manager
+export const kimiSync = () => request('/kimi/sync', 'POST');
+export const kimiQueue = (limit = 30) => request(`/kimi/queue?limit=${limit}`);
+export const kimiEnrich = (leadId) => request(`/kimi/enrich/${leadId}`, 'POST');
+export const kimiBriefing = () => request('/kimi/briefing');
+export const kimiHealth = () => request('/kimi/health');
+
+// Logs / Webhooks
+export const getWebhookLogs = (limit = 50) => request(`/dashboard/logs?limit=${limit}`);
+export const getSystemHealth = () => request('/health');
+
+// Thales / Second Brain
+export const thalesSync = (force = false) => request('/thales/sync', 'POST', { force });
+export const thalesStatus = () => request('/thales/status');
+export const thalesSearch = (query) => request('/thales/search', 'POST', { query });
+export const thalesChat = (message, history = []) => request('/thales/chat', 'POST', { message, history });
+
+// Evolution API / WhatsApp — Pitoco Loco
+export const evoCreateInstance = () => request('/evolution/create-instance', 'POST', {});
+export const evoGetQR = () => request('/evolution/qrcode');
+export const evoStatus = () => request('/evolution/status');
+export const evoSendMessage = (number, message) => request('/evolution/send', 'POST', { number, message });
+
+// Evolution API / WhatsApp — Anna
+export const evoAnnaCreateInstance = () => request('/evolution/anna/create-instance', 'POST', {});
+export const evoAnnaGetQR = () => request('/evolution/anna/qrcode');
+export const evoAnnaStatus = () => request('/evolution/anna/status');
+
+// Ingestion
+export const ingestFile = async (file, title, targetRag, targetCollection) => {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('title', title);
+  form.append('source_type', 'auto');
+  form.append('target_rag', targetRag);
+  form.append('target_collection', targetCollection);
+  const res = await fetch(`${API}/ingest/file`, { method: 'POST', body: form });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  return res.json();
+};
+
+export const ingestURL = (url, title, targetCollection) =>
+  request('/ingest/url', 'POST', { url, title, target_collection: targetCollection });
+
+export const ingestText = (title, text, targetRag, targetCollection) =>
+  request('/ingest/text', 'POST', { title, text, target_rag: targetRag, target_collection: targetCollection });
+
+export const ingestPerplexity = (query, targetCollection, model = 'sonar-pro') =>
+  request('/ingest/perplexity', 'POST', { query, target_collection: targetCollection, model });
+
+export const getIngestCollections = () => request('/ingest/collections', 'GET');
+export const getIngestHistory = () => request('/ingest/history', 'GET');
+
+// Obsidian Vault
+export const obsidianListFiles = (folder = '') => request(`/obsidian/files?folder=${encodeURIComponent(folder)}`);
+export const obsidianReadNote = (path) => request(`/obsidian/note?path=${encodeURIComponent(path)}`);
+export const obsidianWriteNote = (path, content, frontmatter = {}) =>
+  request('/obsidian/note', 'POST', { path, content, frontmatter });
+export const obsidianDailyNote = (date = null) => request('/obsidian/daily', 'POST', { date });
+export const obsidianAppendDaily = (entry, date = null) =>
+  request('/obsidian/daily/append', 'POST', { entry, date });
