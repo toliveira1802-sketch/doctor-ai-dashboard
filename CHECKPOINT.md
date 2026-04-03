@@ -35,9 +35,7 @@ Todas as 7 fases completas. Sistema deployado na VPS Hostinger.
 ---
 
 ## O que falta (proximo passo)
-1. **Pagina de Ingestao no Dashboard** — upload PDF/URL/texto para alimentar RAG
-2. **Reinstalar OpenClaw na VPS** — admin via WhatsApp do sistema
-3. **Adicionar outros agentes ao OpenClaw** — usuario vai informar quais
+1. ~~**Pagina de Ingestao no Dashboard** — upload PDF/URL/texto para alimentar RAG~~ (Concluído)
 4. **Corrigir Supabase** — aparece "unreachable" no health (provavelmente RLS)
 5. **Seed dos RAGs** — alimentar ChromaDB com dados reais
 6. **Configurar dominio** — ai.doctorautoprime.com apontar DNS e ativar HTTPS

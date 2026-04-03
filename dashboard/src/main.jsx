@@ -9,6 +9,7 @@ import Agents from './pages/Agents'
 import AgentBuilder from './pages/AgentBuilder'
 import SkillBuilder from './pages/SkillBuilder'
 import SophiaHub from './pages/SophiaHub'
+import DigitalBrain from './pages/DigitalBrain'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -21,6 +22,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/agents" element={<Agents />} />
           <Route path="/agent-builder" element={<AgentBuilder />} />
           <Route path="/skill-builder" element={<SkillBuilder />} />
+          <Route path="/brain" element={<DigitalBrain />} />
         </Route>
       </Routes>
     </BrowserRouter>

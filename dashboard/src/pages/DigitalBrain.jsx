@@ -1,14 +1,10 @@
 import { useState } from 'react'
 import RagExplorer from './RagExplorer'
 import Ingestion from './Ingestion'
-import SecondBrain from './SecondBrain'
-import BlogGenerator from './BlogGenerator'
 
 const TABS = [
   { id: 'library', label: 'Library', icon: '◂' },
   { id: 'ingestion', label: 'Add Data', icon: '⇡' },
-  { id: 'sync', label: 'Obsidian Sync', icon: '⌥' },
-  { id: 'creator', label: 'Blog Creator', icon: '▤' },
 ]
 
 export default function DigitalBrain() {
@@ -48,8 +44,6 @@ export default function DigitalBrain() {
         <div className="h-full">
           {activeTab === 'library' && <RagExplorer />}
           {activeTab === 'ingestion' && <Ingestion />}
-          {activeTab === 'sync' && <SecondBrain />}
-          {activeTab === 'creator' && <BlogGenerator />}
         </div>
       </div>
     </div>

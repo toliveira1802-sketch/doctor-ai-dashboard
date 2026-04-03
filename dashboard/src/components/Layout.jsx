@@ -13,6 +13,7 @@ const sections = [
     links: [
       { to: '/ia-agents', label: 'IA Agents', icon: 'IA', color: 'purple' },
       { to: '/hub', label: 'Sophia Hub', icon: 'S', color: 'amber' },
+      { to: '/brain', label: 'Digital Brain', icon: 'DB', color: 'emerald' },
     ],
   },
   {
