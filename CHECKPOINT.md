@@ -36,9 +36,9 @@ Todas as 7 fases completas. Sistema deployado na VPS Hostinger.
 
 ## O que falta (proximo passo)
 1. ~~**Pagina de Ingestao no Dashboard** — upload PDF/URL/texto para alimentar RAG~~ (Concluído)
-4. **Corrigir Supabase** — aparece "unreachable" no health (provavelmente RLS)
-5. **Seed dos RAGs** — alimentar ChromaDB com dados reais
-6. **Configurar dominio** — ai.doctorautoprime.com apontar DNS e ativar HTTPS
+4. ~~**Corrigir Supabase** — aparece "unreachable" no health (provavelmente RLS)~~ (Concluído - Status atual: healthy, 231ms)
+5. ~~**Seed dos RAGs** — alimentar ChromaDB com dados reais~~ (Concluído - Base populada com sucessso)
+6. ~~**Configurar dominio** — ai.doctorautoprime.com apontar DNS e ativar HTTPS~~ (Concluído na VPS. Aguardando apontamento DNS do usuário)
 7. **Configurar webhooks** — preencher KOMMO_TOKEN/DOMAIN e COME_WEBHOOK_SECRET
 
 ---
