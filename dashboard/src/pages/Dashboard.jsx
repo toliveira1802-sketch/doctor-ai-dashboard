@@ -248,10 +248,13 @@ export default function Dashboard() {
   const [time, setTime] = useState(new Date())
 
   useEffect(() => {
-    sofiaStatus()
-      .then(setStatus)
-      .catch(() => setStatus(null))
-      .finally(() => setLoading(false))
+    let cancelled = false
+    Promise.all([sofiaStatus().catch(() => null)])
+      .then(([s]) => {
+        if (!cancelled) setStatus(s)
+      })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [])
 
   useEffect(() => {

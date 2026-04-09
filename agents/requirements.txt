@@ -12,5 +12,6 @@ apscheduler>=3.10.0
 sentence-transformers>=3.4.0
 python-multipart>=0.0.18
 pyyaml>=6.0
+slowapi>=0.1.9
 # Multimodal (video processing requires ffmpeg installed on system)
 # ffmpeg must be available in PATH for audio extraction and frame capture

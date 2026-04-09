@@ -1,5 +1,6 @@
 """Orchestrates the full ingestion pipeline: source -> extract -> chunk -> embed -> store."""
 
+import asyncio
 import uuid
 from datetime import datetime, timezone
 
@@ -7,6 +8,9 @@ from ingestion.chunker import chunk_text
 from rag.chroma_client import ChromaManager
 from rag.embeddings import embedding_service
 from services.supabase_client import save_document_registry
+
+# Global lock to serialize ChromaDB writes and prevent concurrent ingestion collisions
+_ingest_lock = asyncio.Lock()
 
 
 class IngestionPipeline:
@@ -25,7 +29,7 @@ class IngestionPipeline:
         metadata: dict | None = None,
         source_url: str | None = None,
     ) -> dict:
-        """Ingest pre-extracted text into a RAG collection."""
+        """Ingest pre-extracted text into a RAG collection (serialized via lock)."""
         doc_id = str(uuid.uuid4())
         meta = metadata or {}
 
@@ -47,26 +51,27 @@ class IngestionPipeline:
             for i in range(len(chunks))
         ]
 
-        self.chroma.add_documents(
-            collection_name=target_collection,
-            documents=chunks,
-            embeddings=embeddings,
-            metadatas=metadatas,
-            ids=ids,
-        )
+        async with _ingest_lock:
+            self.chroma.add_documents(
+                collection_name=target_collection,
+                documents=chunks,
+                embeddings=embeddings,
+                metadatas=metadatas,
+                ids=ids,
+            )
 
-        await save_document_registry({
-            "id": doc_id,
-            "title": title,
-            "source_type": source_type,
-            "source_url": source_url,
-            "source_rag": target_rag,
-            "collection_name": target_collection,
-            "chunk_count": len(chunks),
-            "status": "completed",
-            "metadata": meta,
-            "ingested_at": datetime.now(timezone.utc).isoformat(),
-        })
+            await save_document_registry({
+                "id": doc_id,
+                "title": title,
+                "source_type": source_type,
+                "source_url": source_url,
+                "source_rag": target_rag,
+                "collection_name": target_collection,
+                "chunk_count": len(chunks),
+                "status": "completed",
+                "metadata": meta,
+                "ingested_at": datetime.now(timezone.utc).isoformat(),
+            })
 
         return {
             "document_id": doc_id,

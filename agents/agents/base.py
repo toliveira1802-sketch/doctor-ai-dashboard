@@ -1,18 +1,26 @@
 from abc import ABC, abstractmethod
+from functools import lru_cache
 from pathlib import Path
 
 import yaml
 
 from services.llm_router import llm_router
 
+_PROMPTS_DIR = Path(__file__).parent.parent / "config" / "prompts"
+
+
+@lru_cache(maxsize=16)
+def _load_config(config_path: str) -> dict:
+    """Load and cache agent YAML config from disk."""
+    with open(_PROMPTS_DIR / config_path) as f:
+        return yaml.safe_load(f)
+
 
 class BaseAgent(ABC):
     """Base class for all AI agents."""
 
     def __init__(self, config_path: str):
-        config_file = Path(__file__).parent.parent / "config" / "prompts" / config_path
-        with open(config_file) as f:
-            self.config = yaml.safe_load(f)
+        self.config = _load_config(config_path)
 
         self.name = self.config["name"]
         self.display_name = self.config["display_name"]
