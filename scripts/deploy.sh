@@ -66,7 +66,7 @@ update() {
   cd "$PROJECT_DIR"
 
   # Pull latest code
-  git pull origin main
+  git pull origin master
 
   # Rebuild dashboard
   log "Building dashboard..."
