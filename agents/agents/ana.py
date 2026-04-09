@@ -1,5 +1,8 @@
 """Anna — Especialista em Vendas Consultivas. Humanized WhatsApp sales orchestrator."""
 
+import json
+import logging
+
 from agents.base import BaseAgent
 from rag.retriever import RAGRetriever
 from services.classifier import classify_lead
@@ -46,7 +49,9 @@ class AnaAgent(BaseAgent):
         if len(all_messages) >= 3:
             try:
                 classification = await classify_lead(all_messages)
-            except Exception:
+            except (ValueError, KeyError, RuntimeError) as e:
+                import logging
+                logging.getLogger(__name__).warning("Lead classification failed: %s", e)
                 classification = None
 
         # 5. Extract sales ops (learning note + microtask) after 2+ messages
@@ -54,7 +59,9 @@ class AnaAgent(BaseAgent):
         if len(all_messages) >= 2:
             try:
                 ops = await self._extract_sales_ops(all_messages, classification)
-            except Exception:
+            except (ValueError, KeyError, RuntimeError) as e:
+                import logging
+                logging.getLogger(__name__).warning("Sales ops extraction failed: %s", e)
                 ops = None
 
         result = {
@@ -137,13 +144,12 @@ Retorne este JSON:
                 temperature=0.2,
                 max_tokens=512,
             )
-            import json
-
             # Clean response
             cleaned = raw.strip()
             if cleaned.startswith("```"):
                 cleaned = cleaned.split("\n", 1)[1]
                 cleaned = cleaned.rsplit("```", 1)[0]
             return json.loads(cleaned)
-        except Exception:
+        except (ValueError, KeyError, RuntimeError, json.JSONDecodeError) as e:
+            logging.getLogger(__name__).warning("Sales ops JSON parse failed: %s", e)
             return None

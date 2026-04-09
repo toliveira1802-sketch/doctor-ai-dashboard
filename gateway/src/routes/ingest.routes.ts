@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { callPython } from "../services/pythonBridge.js";
+import { validate } from "../middleware/validate.js";
+import { ingestURLSchema, ingestTextSchema, ingestPerplexitySchema } from "../schemas/index.js";
 
 const router = Router();
 
@@ -32,7 +34,7 @@ router.post("/file", async (req, res) => {
 });
 
 // POST /api/ingest/url - Ingest from URL
-router.post("/url", async (req, res) => {
+router.post("/url", validate(ingestURLSchema), async (req, res) => {
   try {
     const result = await callPython("/rag/ingest-url", "POST", req.body);
     res.json(result);
@@ -42,7 +44,7 @@ router.post("/url", async (req, res) => {
 });
 
 // POST /api/ingest/text - Ingest raw text
-router.post("/text", async (req, res) => {
+router.post("/text", validate(ingestTextSchema), async (req, res) => {
   try {
     const { title, text, target_rag, target_collection } = req.body;
 
@@ -73,7 +75,7 @@ router.post("/text", async (req, res) => {
 });
 
 // POST /api/ingest/perplexity - Research via Perplexity
-router.post("/perplexity", async (req, res) => {
+router.post("/perplexity", validate(ingestPerplexitySchema), async (req, res) => {
   try {
     const result = await callPython("/rag/ingest-perplexity", "POST", req.body);
     res.json(result);

@@ -1,8 +1,9 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.deps import verify_api_key
 from config.settings import settings
 from rag.chroma_client import ChromaManager
 from services.scheduler import init_scheduler
@@ -50,21 +51,34 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+_raw_origins = settings.allowed_origins.strip()
+_allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()] if _raw_origins else []
+
+if not _allowed_origins:
+    import warnings
+    warnings.warn(
+        "ALLOWED_ORIGINS not set — CORS will reject all cross-origin requests. "
+        "Set ALLOWED_ORIGINS in .env (comma-separated).",
+        stacklevel=1,
+    )
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-API-Key"],
 )
 
-# Routes
+# Routes — health is public, everything else requires API key
 app.include_router(health.router, tags=["Health"])
-app.include_router(chat.router, prefix="/agent/ana", tags=["Ana"])
-app.include_router(orchestrate.router, prefix="/agent/sofia", tags=["Sofia"])
-app.include_router(insights.router, prefix="/agent/insights", tags=["Insights"])
-app.include_router(ingest.router, prefix="/rag", tags=["Ingestion"])
-app.include_router(rag.router, prefix="/rag", tags=["RAG"])
-app.include_router(thales_route.router, tags=["Thales"])
-app.include_router(kommo_sync.router, tags=["Kommo"])
-app.include_router(kimi_route.router, tags=["Kimi"])
+
+_auth = [Depends(verify_api_key)]
+app.include_router(chat.router, prefix="/agent/ana", tags=["Ana"], dependencies=_auth)
+app.include_router(orchestrate.router, prefix="/agent/sofia", tags=["Sofia"], dependencies=_auth)
+app.include_router(insights.router, prefix="/agent/insights", tags=["Insights"], dependencies=_auth)
+app.include_router(ingest.router, prefix="/rag", tags=["Ingestion"], dependencies=_auth)
+app.include_router(rag.router, prefix="/rag", tags=["RAG"], dependencies=_auth)
+app.include_router(thales_route.router, tags=["Thales"], dependencies=_auth)
+app.include_router(kommo_sync.router, tags=["Kommo"], dependencies=_auth)
+app.include_router(kimi_route.router, tags=["Kimi"], dependencies=_auth)

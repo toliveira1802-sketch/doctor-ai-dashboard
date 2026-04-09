@@ -1,10 +1,12 @@
 import { Router } from "express";
 import { callPython } from "../services/pythonBridge.js";
+import { validate } from "../middleware/validate.js";
+import { insightsAnalyzeSchema, blogGenerateSchema } from "../schemas/index.js";
 
 const router = Router();
 
 // POST /api/insights/analyze - Generate client insights
-router.post("/analyze", async (req, res) => {
+router.post("/analyze", validate(insightsAnalyzeSchema), async (req, res) => {
   try {
     const result = await callPython(
       "/agent/insights/analyze",
@@ -28,7 +30,7 @@ router.post("/patterns", async (req, res) => {
 });
 
 // POST /api/insights/blog/generate - Generate blog post
-router.post("/blog/generate", async (req, res) => {
+router.post("/blog/generate", validate(blogGenerateSchema), async (req, res) => {
   try {
     const result = await callPython(
       "/agent/insights/blog/generate",

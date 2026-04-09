@@ -1,10 +1,12 @@
 import { Router } from "express";
 import { callPython } from "../services/pythonBridge.js";
+import { validate } from "../middleware/validate.js";
+import { chatMessageSchema } from "../schemas/index.js";
 
 const router = Router();
 
 // POST /api/chat/message - Send message to Ana
-router.post("/message", async (req, res) => {
+router.post("/message", validate(chatMessageSchema), async (req, res) => {
   try {
     const result = await callPython("/agent/ana/chat", "POST", req.body);
     res.json(result);

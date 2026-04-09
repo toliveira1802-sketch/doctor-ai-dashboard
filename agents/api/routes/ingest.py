@@ -11,6 +11,8 @@ from services.supabase_client import save_document_registry
 
 router = APIRouter()
 
+MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
+
 
 # --- URL and Perplexity ingestion models ---
 
@@ -113,7 +115,9 @@ async def _extract_text(content: bytes, filename: str, source_type: str, languag
                         text_parts.append(page_text)
             Path(tmp_path).unlink(missing_ok=True)
             return "\n\n".join(text_parts)
-        except Exception:
+        except (OSError, ValueError) as e:
+            import logging
+            logging.getLogger(__name__).warning("PDF extraction failed for %s: %s", filename, e)
             return ""
 
     else:
@@ -148,8 +152,16 @@ async def ingest_document(
     # Auto-detect source type
     detected_type = _detect_source_type(filename, source_type)
 
-    # Read file
-    content = await file.read()
+    # Read file with size limit to prevent OOM
+    content = await file.read(MAX_UPLOAD_SIZE + 1)
+    if len(content) > MAX_UPLOAD_SIZE:
+        return IngestResponse(
+            document_id=doc_id,
+            title=title,
+            chunk_count=0,
+            collection=target_collection,
+            status=f"rejected_file_too_large_max_{MAX_UPLOAD_SIZE // (1024*1024)}mb",
+        )
 
     # Extract text from any format
     text = await _extract_text(content, filename, detected_type, language)

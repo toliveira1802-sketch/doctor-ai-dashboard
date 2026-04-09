@@ -1,10 +1,13 @@
 import { Router, Request, Response } from "express";
 import { promises as fs } from "fs";
 import path from "path";
+import { validate } from "../middleware/validate.js";
+import { obsidianWriteSchema, obsidianAppendSchema } from "../schemas/index.js";
 
 const router = Router();
 
 const VAULT_PATH = process.env.SECONDBRAIN_PATH || path.resolve(process.cwd(), "../SecondBrain");
+const MAX_NOTE_SIZE = 2 * 1024 * 1024; // 2 MB — reject notes larger than this
 
 // --- Helpers ---
 
@@ -95,9 +98,17 @@ router.get("/note", async (req: Request, res: Response) => {
       return;
     }
     const fullPath = safePath(notePath);
+    const stat = await fs.stat(fullPath);
+
+    if (stat.size > MAX_NOTE_SIZE) {
+      res.status(413).json({
+        error: `Note too large (${(stat.size / 1024 / 1024).toFixed(1)} MB). Max: ${MAX_NOTE_SIZE / 1024 / 1024} MB`,
+      });
+      return;
+    }
+
     const content = await fs.readFile(fullPath, "utf-8");
     const { frontmatter, body } = parseFrontmatter(content);
-    const stat = await fs.stat(fullPath);
 
     res.json({
       path: notePath,
@@ -117,7 +128,7 @@ router.get("/note", async (req: Request, res: Response) => {
 });
 
 // POST /api/obsidian/note — Create or update a note
-router.post("/note", async (req: Request, res: Response) => {
+router.post("/note", validate(obsidianWriteSchema), async (req: Request, res: Response) => {
   try {
     const { path: notePath, content, frontmatter } = req.body;
     if (!notePath || content === undefined) {
@@ -190,7 +201,7 @@ tags: daily-note
 });
 
 // POST /api/obsidian/daily/append — Append an entry to today's daily note
-router.post("/daily/append", async (req: Request, res: Response) => {
+router.post("/daily/append", validate(obsidianAppendSchema), async (req: Request, res: Response) => {
   try {
     const { entry, date: dateStr, section } = req.body;
     if (!entry) {

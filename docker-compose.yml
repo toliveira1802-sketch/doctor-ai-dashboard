@@ -28,9 +28,9 @@ services:
   evolution-db:
     image: postgres:16-alpine
     environment:
-      - POSTGRES_USER=evolution
-      - POSTGRES_PASSWORD=evolution123
-      - POSTGRES_DB=evolution
+      - POSTGRES_USER=${EVOLUTION_DB_USER:-evolution}
+      - POSTGRES_PASSWORD=${EVOLUTION_DB_PASSWORD:?Set EVOLUTION_DB_PASSWORD in .env}
+      - POSTGRES_DB=${EVOLUTION_DB_NAME:-evolution}
     volumes:
       - evolution_db_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -40,9 +40,9 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY:-pitoco-loco-key}
+      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY:?Set EVOLUTION_API_KEY in .env}
       - DATABASE_PROVIDER=postgresql
-      - DATABASE_CONNECTION_URI=postgresql://evolution:evolution123@evolution-db:5432/evolution
+      - DATABASE_CONNECTION_URI=postgresql://${EVOLUTION_DB_USER:-evolution}:${EVOLUTION_DB_PASSWORD:?Set EVOLUTION_DB_PASSWORD in .env}@evolution-db:5432/${EVOLUTION_DB_NAME:-evolution}
       - DATABASE_ENABLED=true
       - WEBHOOK_GLOBAL_URL=http://gateway:3001/api/evolution/webhook
       - WEBHOOK_GLOBAL_ENABLED=true

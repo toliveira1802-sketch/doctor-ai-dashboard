@@ -61,8 +61,15 @@ class ThalesAgent(BaseAgent):
         super().__init__("thales.yaml")
         self.chroma = chroma
         self.retriever = retriever
-        self.vault_path = Path(vault_path or os.getenv("SECONDBRAIN_PATH", "/app/SecondBrain"))
+        self.vault_path = Path(vault_path or os.getenv("SECONDBRAIN_PATH", "/app/SecondBrain")).resolve()
         self._hash_cache: dict[str, str] = {}  # path -> md5 hash of content
+
+    def _safe_resolve(self, rel_path: str) -> Path:
+        """Resolve a relative path within the vault, blocking traversal attacks."""
+        resolved = (self.vault_path / rel_path).resolve()
+        if not str(resolved).startswith(str(self.vault_path)):
+            raise ValueError(f"Path traversal blocked: {rel_path}")
+        return resolved
 
     def scan_vault(self) -> list[dict]:
         """Scan vault and return list of files with metadata."""
@@ -72,6 +79,11 @@ class ThalesAgent(BaseAgent):
         files = []
         for md_file in self.vault_path.rglob("*.md"):
             if not _is_syncable(md_file):
+                continue
+
+            # Ensure resolved path stays inside vault (symlink protection)
+            resolved_file = md_file.resolve()
+            if not str(resolved_file).startswith(str(self.vault_path)):
                 continue
 
             rel_path = str(md_file.relative_to(self.vault_path))
@@ -146,8 +158,9 @@ class ThalesAgent(BaseAgent):
             existing = col.get(where={"doc_id": doc_id})
             if existing and existing["ids"]:
                 col.delete(ids=existing["ids"])
-        except Exception:
-            pass
+        except (KeyError, ValueError) as e:
+            import logging
+            logging.getLogger(__name__).debug("Could not clean old chunks for %s: %s", doc_id, e)
 
         chunks = chunk_text(content)
         if not chunks:

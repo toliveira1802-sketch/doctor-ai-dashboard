@@ -1,10 +1,12 @@
 import { Router } from "express";
 import { callPython } from "../services/pythonBridge.js";
+import { validate } from "../middleware/validate.js";
+import { sofiaCommandSchema } from "../schemas/index.js";
 
 const router = Router();
 
 // POST /api/sofia/command - Send command to Sofia
-router.post("/command", async (req, res) => {
+router.post("/command", validate(sofiaCommandSchema), async (req, res) => {
   try {
     const result = await callPython(
       "/agent/sofia/orchestrate",

@@ -2,6 +2,12 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    # Auth
+    api_secret: str = ""
+
+    # CORS
+    allowed_origins: str = ""  # comma-separated list, e.g. "https://app.example.com,https://admin.example.com"
+
     # Supabase
     supabase_url: str = ""
     supabase_anon_key: str = ""

@@ -8,6 +8,10 @@ RUN npm install
 COPY . .
 RUN npm run build
 
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+RUN chown -R appuser:appgroup /app
+USER appuser
+
 EXPOSE 3001
 
 CMD ["node", "dist/index.js"]
