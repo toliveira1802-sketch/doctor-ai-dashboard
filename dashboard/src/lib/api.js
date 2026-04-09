@@ -77,17 +77,35 @@ export const evoAnnaCreateInstance = () => request('/evolution/anna/create-insta
 export const evoAnnaGetQR = () => request('/evolution/anna/qrcode');
 export const evoAnnaStatus = () => request('/evolution/anna/status');
 
-// Ingestion
-export const ingestFile = async (file, title, targetRag, targetCollection) => {
-  const form = new FormData();
-  form.append('file', file);
-  form.append('title', title);
-  form.append('source_type', 'auto');
-  form.append('target_rag', targetRag);
-  form.append('target_collection', targetCollection);
-  const res = await fetch(`${API}/ingest/file`, { method: 'POST', body: form });
-  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
-  return res.json();
+// Ingestion (with upload progress support)
+export const ingestFile = (file, title, targetRag, targetCollection, onProgress) => {
+  return new Promise((resolve, reject) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('title', title);
+    form.append('source_type', 'auto');
+    form.append('target_rag', targetRag);
+    form.append('target_collection', targetCollection);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API}/ingest/file`);
+
+    if (onProgress) {
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      });
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(JSON.parse(xhr.responseText));
+      } else {
+        reject(new Error(`${xhr.status}: ${xhr.responseText}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.send(form);
+  });
 };
 
 export const ingestURL = (url, title, targetCollection) =>

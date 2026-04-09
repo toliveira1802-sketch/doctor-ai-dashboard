@@ -129,6 +129,7 @@ export default function Ingestion() {
 
   // Form states
   const [selectedFiles, setSelectedFiles] = useState([])
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [title, setTitle] = useState('')
   const [collection, setCollection] = useState('study_car_manuals')
   const [url, setUrl] = useState('')
@@ -156,13 +157,20 @@ export default function Ingestion() {
   const handleSubmit = async () => {
     setProcessing(true)
     setResult(null)
+    setUploadProgress(0)
     try {
       let res
       if (tab === 'file' && selectedFiles.length > 0) {
-        // Upload each file
-        for (const file of selectedFiles) {
-          res = await ingestFile(file, title || file.name, targetRag, collection)
+        // Upload each file with progress
+        for (let i = 0; i < selectedFiles.length; i++) {
+          const file = selectedFiles[i]
+          res = await ingestFile(file, title || file.name, targetRag, collection, (pct) => {
+            // Weight progress across all files
+            const filePct = (i / selectedFiles.length) * 100 + (pct / selectedFiles.length)
+            setUploadProgress(Math.round(filePct))
+          })
         }
+        setUploadProgress(100)
       } else if (tab === 'url' && url) {
         res = await ingestURL(url, title, collection)
       } else if (tab === 'text' && text) {
@@ -367,11 +375,27 @@ export default function Ingestion() {
               </div>
             )}
 
+            {/* Progress Bar */}
+            {processing && tab === 'file' && uploadProgress > 0 && (
+              <div className="mt-5" role="progressbar" aria-valuenow={uploadProgress} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso do upload">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-mono" style={{ color: '#00ffff80' }}>Upload</span>
+                  <span className="text-[10px] font-mono font-bold" style={{ color: '#00ffff' }}>{uploadProgress}%</span>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,255,255,0.08)' }}>
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%`, background: 'linear-gradient(90deg, #00ffff, #a855f7)', boxShadow: '0 0 8px rgba(0,255,255,0.4)' }}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Submit */}
             <button
               onClick={handleSubmit}
               disabled={processing}
-              className="mt-5 w-full rounded-lg py-3 text-xs font-mono font-bold uppercase tracking-widest transition-all duration-300"
+              className="mt-4 w-full rounded-lg py-3 text-xs font-mono font-bold uppercase tracking-widest transition-all duration-300"
               style={{
                 background: processing ? 'rgba(0,255,255,0.05)' : 'rgba(0,255,255,0.1)',
                 border: '1px solid rgba(0,255,255,0.25)',
@@ -382,10 +406,10 @@ export default function Ingestion() {
               {processing ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="w-3 h-3 border border-cyan-400 border-t-transparent rounded-full animate-spin" />
-                  Processando...
+                  {tab === 'file' && uploadProgress < 100 ? `Uploading ${uploadProgress}%...` : 'Processando...'}
                 </span>
               ) : (
-                `Ingerir → ${selectedCol?.label || collection}`
+                `Ingerir \u2192 ${selectedCol?.label || collection}`
               )}
             </button>
 

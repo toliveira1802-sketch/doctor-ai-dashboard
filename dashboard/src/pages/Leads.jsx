@@ -67,7 +67,15 @@ export default function Leads() {
     })
   }, [])
 
+  const PAGE_SIZE = 20
+  const [page, setPage] = useState(0)
+
   const filtered = filter === 'all' ? leads : leads.filter(l => l.classification === filter)
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+  // Reset page when filter changes
+  useEffect(() => { setPage(0) }, [filter])
 
   return (
     <div className="min-h-screen neural-grid p-6 max-w-[1400px] mx-auto">
@@ -116,24 +124,28 @@ export default function Leads() {
           </div>
 
           {/* Lead Table */}
-          <div className="glass-card rounded-lg overflow-hidden animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+          <div className="glass-card rounded-lg overflow-hidden animate-fade-in-up" role="region" aria-label="Lista de leads" style={{ animationDelay: '200ms' }}>
             {loading ? (
-              <div className="p-8 text-center">
+              <div className="p-8 text-center" role="status" aria-live="polite">
                 <span className="w-5 h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin inline-block" />
                 <p className="text-[10px] font-mono text-gray-500 mt-2">Carregando leads...</p>
               </div>
             ) : filtered.length === 0 ? (
-              <div className="p-8 text-center">
+              <div className="p-8 text-center" role="status">
                 <p className="text-sm font-mono text-gray-500">Nenhum lead encontrado</p>
                 <p className="text-[10px] font-mono text-gray-600 mt-1">Os leads aparecem quando clientes interagem com a Ana</p>
               </div>
             ) : (
-              <div className="divide-y divide-white/[0.03]">
-                {filtered.map((lead, i) => (
+              <div className="divide-y divide-white/[0.03]" role="list" aria-label={`${filtered.length} leads${filter !== 'all' ? ` (${filter})` : ''}`}>
+                {paged.map((lead, i) => (
                   <div
                     key={lead.id || i}
+                    role="listitem"
+                    tabIndex={0}
+                    aria-selected={selected?.id === lead.id}
                     onClick={() => setSelected(selected?.id === lead.id ? null : lead)}
-                    className="flex items-center gap-4 px-4 py-3 cursor-pointer transition-all hover:bg-white/[0.02]"
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(selected?.id === lead.id ? null : lead) } }}
+                    className="flex items-center gap-4 px-4 py-3 cursor-pointer transition-all hover:bg-white/[0.02] focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
                     style={selected?.id === lead.id ? { background: 'rgba(0,255,255,0.03)', borderLeft: '2px solid #00ffff40' } : {}}
                   >
                     <div className="flex-1 min-w-0">
@@ -170,6 +182,34 @@ export default function Leads() {
                   </div>
                 ))}
               </div>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <nav className="flex items-center justify-between px-4 py-3 border-t border-white/[0.03]" role="navigation" aria-label="Paginacao de leads">
+                  <p className="text-[10px] font-mono text-gray-500">
+                    {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
+                  </p>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => setPage(p => Math.max(0, p - 1))}
+                      disabled={page === 0}
+                      aria-label="Pagina anterior"
+                      className="px-3 py-1.5 rounded text-[10px] font-mono font-bold transition-all disabled:opacity-30"
+                      style={{ background: 'rgba(0,255,255,0.05)', border: '1px solid rgba(0,255,255,0.1)', color: '#00ffff' }}
+                    >
+                      Anterior
+                    </button>
+                    <button
+                      onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                      disabled={page >= totalPages - 1}
+                      aria-label="Proxima pagina"
+                      className="px-3 py-1.5 rounded text-[10px] font-mono font-bold transition-all disabled:opacity-30"
+                      style={{ background: 'rgba(0,255,255,0.05)', border: '1px solid rgba(0,255,255,0.1)', color: '#00ffff' }}
+                    >
+                      Proximo
+                    </button>
+                  </div>
+                </nav>
+              )}
             )}
           </div>
         </div>
